@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of kubectl-mft
+
 package mft
 
 import (
@@ -10,7 +13,6 @@ import (
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content/file"
-	"oras.land/oras-go/v2/content/oci"
 	"oras.land/oras-go/v2/registry"
 )
 
@@ -47,15 +49,6 @@ func Pack(ctx context.Context, manifest string, tag string) error {
 	}()
 
 	return createOCILayout(ctx, manifestContent, &ref)
-}
-
-// parseReference parses and validates the OCI reference
-func parseReference(tag string) (registry.Reference, error) {
-	ref, err := registry.ParseReference(tag)
-	if err != nil {
-		return registry.Reference{}, fmt.Errorf("failed to parse reference %q: %w", tag, err)
-	}
-	return ref, nil
 }
 
 // prepareManifestContent processes the manifest file and creates content descriptor
@@ -100,22 +93,13 @@ func prepareManifestContent(ctx context.Context, manifestPath string, ref *regis
 
 // createOCILayout creates the final OCI layout store and copies the manifest
 func createOCILayout(ctx context.Context, content *ManifestContent, ref *registry.Reference) error {
-	layoutPath := filepath.Join(ociDIR, manifestDIRName(ref))
-	layoutStore, err := oci.New(layoutPath)
+	layoutStore, err := createOCILayoutStore(ref)
 	if err != nil {
-		return fmt.Errorf("failed to create oci-layout store: %w", err)
+		return err
 	}
 
 	if _, err := oras.Copy(ctx, content.FileStore, content.Tag, layoutStore, content.Tag, oras.DefaultCopyOptions); err != nil {
 		return fmt.Errorf("failed to copy manifest: %w", err)
 	}
 	return nil
-}
-
-// manifestDIRName generates a directory name for the manifest based on OCI reference
-// Format: <registry>-<repository>-<tag>, where "/" in the repository is replaced with "-"
-// Example: "docker.io-user/app-v1.0.0" becomes "docker.io-user-app-v1.0.0"
-func manifestDIRName(r *registry.Reference) string {
-	s := []string{r.Registry, strings.ReplaceAll(r.Repository, "/", "-"), r.ReferenceOrDefault()}
-	return strings.Join(s, "-")
 }
