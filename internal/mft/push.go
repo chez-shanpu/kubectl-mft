@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of kubectl-mft
+
 package mft
 
 import (
@@ -78,6 +81,11 @@ func pushToRepository(ctx context.Context, source oras.Target, dest oras.Target,
 
 // formatPushError provides better error messages based on common push failures
 func formatPushError(err error, ref *registry.Reference) error {
+	if err == nil {
+		return fmt.Errorf("unknown error occurred while pushing to %s/%s:%s",
+			ref.Registry, ref.Repository, ref.ReferenceOrDefault())
+	}
+	
 	errorMsg := err.Error()
 
 	// Check for common error patterns and provide helpful messages
