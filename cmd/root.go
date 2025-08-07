@@ -11,8 +11,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "kubectl-mft",
-	Short: "A kubectl plugin for managing Kubernetes manifests",
+	Use:          "kubectl-mft",
+	Short:        "A kubectl plugin for managing Kubernetes manifests",
+	SilenceUsage: true,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
