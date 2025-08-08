@@ -11,8 +11,8 @@ import (
 	"github.com/chez-shanpu/kubectl-mft/internal/repository/remote"
 )
 
-// Push pushes a Kubernetes manifest to an OCI registry
-func Push(ctx context.Context, tag string) error {
+// Pull pulls a Kubernetes manifest from an OCI registry
+func Pull(ctx context.Context, tag string) error {
 	ref, err := repository.ParseReference(tag)
 	if err != nil {
 		return err
@@ -28,5 +28,5 @@ func Push(ctx context.Context, tag string) error {
 		return err
 	}
 
-	return repository.Copy(ctx, layoutStore, repo, ref)
+	return repository.Copy(ctx, repo, layoutStore, ref)
 }

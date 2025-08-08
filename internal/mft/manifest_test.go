@@ -9,54 +9,6 @@ import (
 	"oras.land/oras-go/v2/registry"
 )
 
-func TestParseReference(t *testing.T) {
-	tests := []struct {
-		name    string
-		tag     string
-		wantErr bool
-	}{
-		{
-			name:    "valid localhost reference",
-			tag:     "localhost/test:v1.0.0",
-			wantErr: false,
-		},
-		{
-			name:    "valid docker hub reference",
-			tag:     "docker.io/user/repo:latest",
-			wantErr: false,
-		},
-		{
-			name:    "empty tag",
-			tag:     "",
-			wantErr: true,
-		},
-		{
-			name:    "invalid format",
-			tag:     "invalid-tag-format",
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ref, err := parseReference(tt.tag)
-
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("parseReference() expected error but got none")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("parseReference() unexpected error: %v", err)
-				}
-				if ref.String() == "" {
-					t.Errorf("parseReference() returned empty reference")
-				}
-			}
-		})
-	}
-}
-
 func TestManifestDIRName(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -96,9 +48,9 @@ func TestManifestDIRName(t *testing.T) {
 				Reference:  tt.reference,
 			}
 
-			result := manifestDIRName(ref)
+			result := manifestName(ref)
 			if result != tt.expected {
-				t.Errorf("manifestDIRName() = %q, expected %q", result, tt.expected)
+				t.Errorf("manifestName() = %q, expected %q", result, tt.expected)
 			}
 		})
 	}
