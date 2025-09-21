@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
-	"github.com/chez-shanpu/kubectl-mft/internal/registry"
+	"github.com/chez-shanpu/kubectl-mft/internal/repository"
 )
 
 const (
@@ -58,6 +58,6 @@ Examples:
 }
 
 func runPull(ctx context.Context) error {
-	r := registry.NewRegistry()
-	return mft.Pull(ctx, r, pullOpts.tag)
+	r := repository.NewRepository(pullOpts.tag)
+	return mft.Pull(ctx, r)
 }
