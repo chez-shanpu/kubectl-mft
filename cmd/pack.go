@@ -7,9 +7,9 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
+	"github.com/chez-shanpu/kubectl-mft/internal/registry"
 )
 
 const (
@@ -19,25 +19,22 @@ const (
 	packTagShortFlag  = "t"
 )
 
-func init() {
-	rootCmd.AddCommand(packCmd)
-
-	flag := packCmd.Flags()
-	flag.StringP(packFileFlag, packFileShortFlag, "", "Path to the manifest file to pack")
-	flag.StringP(packTagFlag, packTagShortFlag, "", "OCI reference for the packed manifest (e.g., registry.example.com/repo:tag)")
-
-	_ = packCmd.MarkFlagRequired(packFileFlag)
-	_ = packCmd.MarkFlagRequired(packTagFlag)
-}
-
-type packOpts struct {
+type PackOpts struct {
 	filePath string
 	tag      string
 }
 
-func (p *packOpts) parse(f *pflag.FlagSet) {
-	p.filePath = f.Lookup(packFileFlag).Value.String()
-	p.tag = f.Lookup(packTagFlag).Value.String()
+var packOpts PackOpts
+
+func init() {
+	rootCmd.AddCommand(packCmd)
+
+	flag := packCmd.Flags()
+	flag.StringVarP(&packOpts.filePath, packFileFlag, packFileShortFlag, "", "Path to the manifest file to pack")
+	flag.StringVarP(&packOpts.tag, packTagFlag, packTagShortFlag, "", "OCI reference for the packed manifest (e.g., registry.example.com/repo:tag)")
+
+	_ = packCmd.MarkFlagRequired(packFileFlag)
+	_ = packCmd.MarkFlagRequired(packTagFlag)
 }
 
 // packCmd represents the pack command
@@ -66,13 +63,11 @@ Examples:
   # Pack a manifest with Docker Hub reference
   kubectl mft pack -f service.yaml -t docker.io/myorg/manifests:latest`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opt := &packOpts{}
-		opt.parse(cmd.Flags())
-		return runPack(opt)
+		return runPack(cmd.Context())
 	},
 }
 
-func runPack(opt *packOpts) error {
-	ctx := context.Background()
-	return mft.Pack(ctx, opt.filePath, opt.tag)
+func runPack(ctx context.Context) error {
+	r := registry.NewRegistry()
+	return mft.Pack(ctx, r, packOpts.tag, packOpts.filePath)
 }
