@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
-	"github.com/chez-shanpu/kubectl-mft/internal/registry"
+	"github.com/chez-shanpu/kubectl-mft/internal/repository"
 )
 
 const (
@@ -49,7 +49,7 @@ registries, enabling manifest versioning, distribution, and deployment using
 standard container tooling.
 
 The packed manifest is stored in OCI image layout format, allowing it to be:
-- Pushed to any OCI-compatible registry (Docker Hub, GitHub Container Registry, etc.)
+- Pushed to any OCI-compatible registry (Docker Hub, GitHub Container Repository, etc.)
 - Tagged and versioned like container images
 - Pulled and deployed using standard OCI tools
 
@@ -68,6 +68,6 @@ Examples:
 }
 
 func runPack(ctx context.Context) error {
-	r := registry.NewRegistry()
-	return mft.Pack(ctx, r, packOpts.tag, packOpts.filePath)
+	r := repository.NewRepository(packOpts.tag)
+	return mft.Pack(ctx, r, packOpts.filePath)
 }

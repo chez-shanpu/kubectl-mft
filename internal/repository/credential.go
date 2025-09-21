@@ -1,4 +1,4 @@
-package registry
+package repository
 
 import (
 	"fmt"
