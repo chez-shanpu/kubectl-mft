@@ -7,9 +7,9 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
+	"github.com/chez-shanpu/kubectl-mft/internal/registry"
 )
 
 const (
@@ -17,21 +17,19 @@ const (
 	pushTagShortFlag = "t"
 )
 
+type PushOpts struct {
+	tag string
+}
+
+var pushOpts PushOpts
+
 func init() {
 	rootCmd.AddCommand(pushCmd)
 
 	flag := pushCmd.Flags()
-	flag.StringP(pushTagFlag, pushTagShortFlag, "", "OCI reference for the manifest to push (e.g., registry.example.com/repo:tag)")
+	flag.StringVarP(&pushOpts.tag, pushTagFlag, pushTagShortFlag, "", "OCI reference for the manifest to push (e.g., registry.example.com/repo:tag)")
 
 	_ = pushCmd.MarkFlagRequired(pushTagFlag)
-}
-
-type pushOpts struct {
-	tag string
-}
-
-func (p *pushOpts) parse(f *pflag.FlagSet) {
-	p.tag = f.Lookup(pushTagFlag).Value.String()
 }
 
 // pushCmd represents the push command
@@ -54,12 +52,11 @@ Examples:
   # Push to localhost registry
   kubectl mft push -t localhost:5000/test-app:dev`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opt := &pushOpts{}
-		opt.parse(cmd.Flags())
-		return runPush(opt)
+		return runPush(cmd.Context())
 	},
 }
 
-func runPush(opt *pushOpts) error {
-	return mft.Push(context.Background(), opt.tag)
+func runPush(ctx context.Context) error {
+	r := registry.NewRegistry()
+	return mft.Push(ctx, r, pushOpts.tag)
 }

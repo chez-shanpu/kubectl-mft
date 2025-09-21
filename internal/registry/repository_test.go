@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Authors of kubectl-mft
 
-package repository
+package registry
 
 import (
 	"errors"
@@ -41,7 +41,7 @@ func TestParseReference(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ref, err := ParseReference(tt.tag)
+			ref, err := parseReference(tt.tag)
 
 			if tt.wantErr {
 				if err == nil {
@@ -54,6 +54,53 @@ func TestParseReference(t *testing.T) {
 				if ref.String() == "" {
 					t.Errorf("parseReference() returned empty reference")
 				}
+			}
+		})
+	}
+}
+
+func TestRepoDIR(t *testing.T) {
+	tests := []struct {
+		name       string
+		registry   string
+		repository string
+		reference  string
+		expected   string
+	}{
+		{
+			name:       "localhost reference",
+			registry:   "localhost",
+			repository: "test",
+			reference:  "v1.0.0",
+			expected:   "localhost-test-v1.0.0",
+		},
+		{
+			name:       "docker hub with slash",
+			registry:   "docker.io",
+			repository: "user/app",
+			reference:  "latest",
+			expected:   "docker.io-user-app-latest",
+		},
+		{
+			name:       "nested repository",
+			registry:   "gcr.io",
+			repository: "project/team/service",
+			reference:  "v2.1.0",
+			expected:   "gcr.io-project-team-service-v2.1.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ref := &registry.Reference{
+				Registry:   tt.registry,
+				Repository: tt.repository,
+				Reference:  tt.reference,
+			}
+
+			result := repoDIR(ref)
+			if result != tt.expected {
+				t.Errorf("repoDIR() = %q, expected %q", result, tt.expected)
 			}
 		})
 	}

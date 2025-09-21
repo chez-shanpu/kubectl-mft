@@ -7,9 +7,9 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
+	"github.com/chez-shanpu/kubectl-mft/internal/registry"
 )
 
 const (
@@ -17,21 +17,19 @@ const (
 	pullTagShortFlag = "t"
 )
 
+type PullOpts struct {
+	tag string
+}
+
+var pullOpts PullOpts
+
 func init() {
 	rootCmd.AddCommand(pullCmd)
 
 	flag := pullCmd.Flags()
-	flag.StringP(pullTagFlag, pullTagShortFlag, "", "OCI reference for the manifest to pull (e.g., registry.example.com/repo:tag)")
+	flag.StringVarP(&pullOpts.tag, pullTagFlag, pullTagShortFlag, "", "OCI reference for the manifest to pull (e.g., registry.example.com/repo:tag)")
 
 	_ = pullCmd.MarkFlagRequired(pullTagFlag)
-}
-
-type pullOpts struct {
-	tag string
-}
-
-func (p *pullOpts) parse(f *pflag.FlagSet) {
-	p.tag = f.Lookup(pullTagFlag).Value.String()
 }
 
 // pullCmd represents the pull command
@@ -55,13 +53,11 @@ Examples:
   # Pull from localhost registry
   kubectl mft pull -t localhost:5000/test-app:dev`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opt := &pullOpts{}
-		opt.parse(cmd.Flags())
-		return runPull(opt)
+		return runPull(cmd.Context())
 	},
 }
 
-func runPull(opt *pullOpts) error {
-	ctx := context.Background()
-	return mft.Pull(ctx, opt.tag)
+func runPull(ctx context.Context) error {
+	r := registry.NewRegistry()
+	return mft.Pull(ctx, r, pullOpts.tag)
 }
