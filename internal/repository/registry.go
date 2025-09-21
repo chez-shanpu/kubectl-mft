@@ -110,14 +110,16 @@ func newFileStore(ctx context.Context, ref *registry.Reference, manifestPath str
 		return nil, fmt.Errorf("failed to get absolute path of %q: %w", manifestPath, err)
 	}
 
-	name := strings.TrimSuffix(filepath.Base(manifestPath), filepath.Ext(manifestPath))
-	contentDesc, err := fs.Add(ctx, name, contentMediaType, path)
+	contentDesc, err := fs.Add(ctx, repoName(ref), contentMediaType, path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add content: %w", err)
 	}
 
 	manifestDesc, err := oras.PackManifest(ctx, fs, oras.PackManifestVersion1_1, artifactType, oras.PackManifestOptions{
 		Layers: []v1.Descriptor{contentDesc},
+		ManifestAnnotations: map[string]string{
+			"org.opencontainers.image.title": repoName(ref),
+		},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to pack manifestPath: %w", err)
@@ -133,7 +135,7 @@ func newFileStore(ctx context.Context, ref *registry.Reference, manifestPath str
 }
 
 func newOCILayoutStore(ref *registry.Reference) (*oci.Store, error) {
-	layoutPath := filepath.Join(baseDir, repoDIR(ref))
+	layoutPath := filepath.Join(baseDir, repoName(ref))
 	layoutStore, err := oci.New(layoutPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create oci-layout store: %w", err)
@@ -150,7 +152,13 @@ func parseReference(tag string) (*registry.Reference, error) {
 	return &ref, nil
 }
 
-func repoDIR(r *registry.Reference) string {
-	s := []string{r.Registry, strings.ReplaceAll(r.Repository, "/", "-"), r.ReferenceOrDefault()}
-	return strings.Join(s, "-")
+func repoName(ref *registry.Reference) string {
+	if ref.Registry != "" && ref.Repository != "" {
+		return ref.Registry + "/" + ref.Repository
+	} else if ref.Registry != "" {
+		return ref.Registry
+	} else if ref.Repository != "" {
+		return ref.Repository
+	}
+	return ""
 }
