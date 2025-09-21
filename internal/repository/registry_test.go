@@ -59,53 +59,6 @@ func TestParseReference(t *testing.T) {
 	}
 }
 
-func TestRepoDIR(t *testing.T) {
-	tests := []struct {
-		name       string
-		registry   string
-		repository string
-		reference  string
-		expected   string
-	}{
-		{
-			name:       "localhost reference",
-			registry:   "localhost",
-			repository: "test",
-			reference:  "v1.0.0",
-			expected:   "localhost-test-v1.0.0",
-		},
-		{
-			name:       "docker hub with slash",
-			registry:   "docker.io",
-			repository: "user/app",
-			reference:  "latest",
-			expected:   "docker.io-user-app-latest",
-		},
-		{
-			name:       "nested repository",
-			registry:   "gcr.io",
-			repository: "project/team/service",
-			reference:  "v2.1.0",
-			expected:   "gcr.io-project-team-service-v2.1.0",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ref := &registry.Reference{
-				Registry:   tt.registry,
-				Repository: tt.repository,
-				Reference:  tt.reference,
-			}
-
-			result := repoDIR(ref)
-			if result != tt.expected {
-				t.Errorf("repoDIR() = %q, expected %q", result, tt.expected)
-			}
-		})
-	}
-}
-
 // Test formatRegistryError function with different error patterns
 func TestFormatRegistryError(t *testing.T) {
 	// Create a sample registry reference for testing
@@ -264,6 +217,66 @@ func TestFormatRegistryError_EdgeCases(t *testing.T) {
 			// Result should not be nil (except for nil input case)
 			if tt.inputError != nil && result == nil {
 				t.Errorf("formatRegistryError() returned nil for non-nil input")
+			}
+		})
+	}
+}
+
+func TestRepoName(t *testing.T) {
+	tests := []struct {
+		name       string
+		registry   string
+		repository string
+		expected   string
+	}{
+		{
+			name:       "both registry and repository present",
+			registry:   "docker.io",
+			repository: "user/app",
+			expected:   "docker.io/user/app",
+		},
+		{
+			name:       "only registry present",
+			registry:   "gcr.io",
+			repository: "",
+			expected:   "gcr.io",
+		},
+		{
+			name:       "only repository present",
+			registry:   "",
+			repository: "myapp",
+			expected:   "myapp",
+		},
+		{
+			name:       "both empty",
+			registry:   "",
+			repository: "",
+			expected:   "",
+		},
+		{
+			name:       "nested repository path",
+			registry:   "gcr.io",
+			repository: "project/team/service",
+			expected:   "gcr.io/project/team/service",
+		},
+		{
+			name:       "registry with subdomain",
+			registry:   "us-west2-docker.pkg.dev",
+			repository: "project/repo",
+			expected:   "us-west2-docker.pkg.dev/project/repo",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ref := &registry.Reference{
+				Registry:   tt.registry,
+				Repository: tt.repository,
+			}
+
+			result := repoName(ref)
+			if result != tt.expected {
+				t.Errorf("repoName() = %q, expected %q", result, tt.expected)
 			}
 		})
 	}
