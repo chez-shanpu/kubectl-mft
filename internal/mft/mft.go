@@ -2,6 +2,7 @@ package mft
 
 import (
 	"context"
+	"fmt"
 	"os"
 )
 
@@ -19,19 +20,23 @@ func Dump(ctx context.Context, r Repository, filePath string) error {
 		return err
 	}
 
-	var out *os.File
 	if filePath == "" {
-		out = os.Stdout
-	} else {
-		out, err = os.Create(filePath)
-		if err != nil {
-			return err
-		}
+		fmt.Print(string(data))
+		return nil
+	}
+
+	out, err := os.Create(filePath)
+	if err != nil {
+		return err
 	}
 	defer out.Close()
 
 	_, err = out.Write(data)
-	return err
+	if err != nil {
+		return err
+	}
+	fmt.Println(filePath)
+	return nil
 }
 
 // Pack packages a Kubernetes manifest into OCI layout format
