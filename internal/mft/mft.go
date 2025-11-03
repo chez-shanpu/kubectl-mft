@@ -9,6 +9,7 @@ import (
 type Repository interface {
 	Dump(ctx context.Context) ([]byte, error)
 	Save(ctx context.Context, manifestPath string) error
+	Path(ctx context.Context) (string, error)
 	Push(ctx context.Context) error
 	Pull(ctx context.Context) error
 }
@@ -42,6 +43,15 @@ func Dump(ctx context.Context, r Repository, filePath string) error {
 // Pack packages a Kubernetes manifest into OCI layout format
 func Pack(ctx context.Context, r Repository, manifest string) error {
 	return r.Save(ctx, manifest)
+}
+
+func Path(ctx context.Context, r Repository) error {
+	path, err := r.Path(ctx)
+	if err != nil {
+		return err
+	}
+	fmt.Println(path)
+	return nil
 }
 
 // Pull pulls a Kubernetes manifest from an OCI registry
