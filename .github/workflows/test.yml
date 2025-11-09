@@ -27,4 +27,4 @@ jobs:
           aqua_version: v2.53.3
 
       - name: Run tests
-        run: make check
+        run: make check-all

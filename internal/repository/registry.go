@@ -32,6 +32,12 @@ const (
 var baseDir string
 
 func init() {
+	// Check for environment variable first (useful for testing)
+	if dir := os.Getenv("KUBECTL_MFT_STORAGE_DIR"); dir != "" {
+		baseDir = dir
+		return
+	}
+
 	home, err := os.UserHomeDir()
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "failed to get user home directory: %v\n", err)
@@ -94,6 +100,11 @@ func newAuthenticatedRepository(ref *registry.Reference) (*remote.Repository, er
 		Client:     retry.DefaultClient,
 		Cache:      auth.NewCache(),
 		Credential: c,
+	}
+
+	// Enable PlainHTTP for localhost registries (for testing)
+	if isLocalRegistry(ref.Registry) {
+		repo.PlainHTTP = true
 	}
 
 	return repo, nil
@@ -168,4 +179,10 @@ func repoName(ref *registry.Reference) string {
 		return ref.Repository
 	}
 	return ""
+}
+
+// isLocalRegistry checks if the registry is a local/test registry that should use PlainHTTP
+func isLocalRegistry(registry string) bool {
+	return strings.HasPrefix(registry, "localhost") ||
+		strings.HasPrefix(registry, "127.0.0.1")
 }

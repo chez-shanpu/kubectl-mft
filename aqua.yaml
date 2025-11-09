@@ -12,3 +12,4 @@ registries:
   ref: v4.382.0  # renovate: depName=aquaproj/aqua-registry
 packages:
   - name: dominikh/go-tools/staticcheck@2025.1.1
+  - name: golang/tools/goimports@v0.38.0
