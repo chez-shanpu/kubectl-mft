@@ -92,9 +92,8 @@ func printTable(infos []mft.Info) error {
 	fmt.Fprintln(w, "REPOSITORY\tTAG\tSIZE\tCREATED")
 
 	for _, info := range infos {
-		size := formatSize(info.Size)
 		created := info.Created.Format("2006-01-02 15:04:05")
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", info.Repository, info.Tag, size, created)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", info.Repository, info.Tag, info.Size, created)
 	}
 
 	return w.Flush()
@@ -110,18 +109,4 @@ func printYAML(infos []mft.Info) error {
 	encoder := yaml.NewEncoder(os.Stdout)
 	defer encoder.Close()
 	return encoder.Encode(infos)
-}
-
-// formatSize formats byte size to human-readable format
-func formatSize(bytes int64) string {
-	const unit = 1024
-	if bytes < unit {
-		return fmt.Sprintf("%dB", bytes)
-	}
-	div, exp := int64(unit), 0
-	for n := bytes / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f%cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }

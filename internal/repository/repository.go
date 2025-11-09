@@ -251,7 +251,7 @@ func readOCIIndex(ctx context.Context, layoutPath, indexPath string) ([]mft.Info
 		infos = append(infos, mft.Info{
 			Repository: repoName,
 			Tag:        tag,
-			Size:       size,
+			Size:       formatSize(size),
 			Created:    created,
 		})
 	}
@@ -279,4 +279,228 @@ func getManifestMetadata(layoutPath, digest string) (created time.Time, size int
 	}
 
 	return fileInfo.ModTime(), fileInfo.Size(), nil
+}
+
+func (r *Repository) Delete(ctx context.Context) (*mft.DeleteResult, error) {
+	ref, err := parseReference(r.tag)
+	if err != nil {
+		return nil, err
+	}
+
+	layoutStore, err := newOCILayoutStore(ref)
+	if err != nil {
+		return nil, err
+	}
+
+	desc, err := layoutStore.Resolve(ctx, ref.ReferenceOrDefault())
+	if err != nil {
+		// If not found, return nil (idempotent behavior)
+		if strings.Contains(err.Error(), "not found") {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to resolve reference %s: %w", ref.ReferenceOrDefault(), err)
+	}
+
+	manifestJSON, err := content.FetchAll(ctx, layoutStore, desc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch manifest: %w", err)
+	}
+
+	var m v1.Manifest
+	if err := json.Unmarshal(manifestJSON, &m); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal manifest: %w", err)
+	}
+
+	totalSize := desc.Size
+	for _, layer := range m.Layers {
+		totalSize += layer.Size
+	}
+
+	layoutPath := filepath.Join(baseDir, repoName(ref))
+	indexPath := filepath.Join(layoutPath, "index.json")
+
+	if err := removeTagFromIndex(indexPath, ref.ReferenceOrDefault()); err != nil {
+		return nil, fmt.Errorf("failed to remove tag from index: %w", err)
+	}
+
+	referencedBlobs, err := getReferencedBlobs(ctx, layoutPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get referenced blobs: %w", err)
+	}
+
+	// Find orphaned blobs (blobs only referenced by deleted manifest)
+	var orphanedBlobs []string
+	for _, layer := range m.Layers {
+		digest := layer.Digest.String()
+		if !referencedBlobs[digest] {
+			orphanedBlobs = append(orphanedBlobs, digest)
+		}
+	}
+	// Also check manifest blob itself
+	manifestDigest := desc.Digest.String()
+	if !referencedBlobs[manifestDigest] {
+		orphanedBlobs = append(orphanedBlobs, manifestDigest)
+	}
+
+	for _, digest := range orphanedBlobs {
+		if err := deleteBlobFile(layoutPath, digest); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: failed to delete blob %s: %v\n", digest, err)
+		}
+	}
+
+	// Check if repository directory should be removed
+	indexData, err := os.ReadFile(indexPath)
+	if err == nil {
+		var index struct {
+			Manifests []interface{} `json:"manifests"`
+		}
+		if err := json.Unmarshal(indexData, &index); err == nil {
+			if len(index.Manifests) == 0 {
+				// Remove entire repository directory if no manifests remain
+				if err := os.RemoveAll(layoutPath); err != nil {
+					fmt.Fprintf(os.Stderr, "warning: failed to remove repository directory: %v\n", err)
+				}
+			}
+		}
+	}
+
+	return &mft.DeleteResult{
+		Repository:   repoName(ref),
+		Tag:          ref.Reference,
+		Size:         formatSize(totalSize),
+		RemovedBlobs: len(orphanedBlobs),
+	}, nil
+}
+
+// removeTagFromIndex removes a tag entry from index.json
+func removeTagFromIndex(indexPath, tag string) error {
+	indexData, err := os.ReadFile(indexPath)
+	if err != nil {
+		return fmt.Errorf("failed to read index.json: %w", err)
+	}
+
+	var index struct {
+		SchemaVersion int `json:"schemaVersion"`
+		Manifests     []struct {
+			MediaType   string            `json:"mediaType"`
+			Digest      string            `json:"digest"`
+			Size        int64             `json:"size"`
+			Annotations map[string]string `json:"annotations"`
+		} `json:"manifests"`
+	}
+
+	if err := json.Unmarshal(indexData, &index); err != nil {
+		return fmt.Errorf("failed to unmarshal index.json: %w", err)
+	}
+
+	var newManifests []struct {
+		MediaType   string            `json:"mediaType"`
+		Digest      string            `json:"digest"`
+		Size        int64             `json:"size"`
+		Annotations map[string]string `json:"annotations"`
+	}
+
+	for _, manifest := range index.Manifests {
+		if manifest.Annotations["org.opencontainers.image.ref.name"] != tag {
+			newManifests = append(newManifests, manifest)
+		}
+	}
+
+	index.Manifests = newManifests
+
+	// Write back updated index
+	updatedData, err := json.MarshalIndent(index, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal index.json: %w", err)
+	}
+
+	if err := os.WriteFile(indexPath, updatedData, 0644); err != nil {
+		return fmt.Errorf("failed to write index.json: %w", err)
+	}
+
+	return nil
+}
+
+// getReferencedBlobs scans all manifests in index.json and returns referenced blob digests
+func getReferencedBlobs(ctx context.Context, layoutPath string) (map[string]bool, error) {
+	indexPath := filepath.Join(layoutPath, "index.json")
+	indexData, err := os.ReadFile(indexPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read index.json: %w", err)
+	}
+
+	var index struct {
+		Manifests []struct {
+			Digest string `json:"digest"`
+		} `json:"manifests"`
+	}
+
+	if err := json.Unmarshal(indexData, &index); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal index.json: %w", err)
+	}
+
+	referenced := make(map[string]bool)
+
+	for _, manifestEntry := range index.Manifests {
+		referenced[manifestEntry.Digest] = true
+
+		parts := strings.SplitN(manifestEntry.Digest, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		algorithm := parts[0]
+		encoded := parts[1]
+
+		manifestBlobPath := filepath.Join(layoutPath, "blobs", algorithm, encoded)
+		manifestData, err := os.ReadFile(manifestBlobPath)
+		if err != nil {
+			continue
+		}
+
+		var manifest v1.Manifest
+		if err := json.Unmarshal(manifestData, &manifest); err != nil {
+			continue
+		}
+
+		for _, layer := range manifest.Layers {
+			referenced[layer.Digest.String()] = true
+		}
+
+		if manifest.Config.Digest.String() != "" {
+			referenced[manifest.Config.Digest.String()] = true
+		}
+	}
+
+	return referenced, nil
+}
+
+// deleteBlobFile removes a blob file by digest
+func deleteBlobFile(layoutPath, digest string) error {
+	parts := strings.SplitN(digest, ":", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid digest format: %s", digest)
+	}
+	algorithm := parts[0]
+	encoded := parts[1]
+
+	blobPath := filepath.Join(layoutPath, "blobs", algorithm, encoded)
+	if err := os.Remove(blobPath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove blob file: %w", err)
+	}
+
+	return nil
+}
+
+// formatSize formats byte size to human-readable format
+func formatSize(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%dB", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f%cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
