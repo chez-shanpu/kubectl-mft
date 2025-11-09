@@ -4,7 +4,16 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 )
+
+// Info represents information about a stored manifest
+type Info struct {
+	Repository string    `json:"repository" yaml:"repository"`
+	Tag        string    `json:"tag" yaml:"tag"`
+	Size       int64     `json:"size" yaml:"size"`
+	Created    time.Time `json:"created" yaml:"created"`
+}
 
 type Repository interface {
 	Dump(ctx context.Context) ([]byte, error)
@@ -12,6 +21,7 @@ type Repository interface {
 	Path(ctx context.Context) (string, error)
 	Push(ctx context.Context) error
 	Pull(ctx context.Context) error
+	List(ctx context.Context) ([]Info, error)
 }
 
 // Dump retrieves and outputs a manifest from local OCI layout storage
@@ -62,4 +72,8 @@ func Pull(ctx context.Context, r Repository) error {
 // Push pushes a Kubernetes manifest to an OCI registry
 func Push(ctx context.Context, r Repository) error {
 	return r.Push(ctx)
+}
+
+func List(ctx context.Context, r Repository) ([]Info, error) {
+	return r.List(ctx)
 }
