@@ -100,6 +100,11 @@ func newAuthenticatedRepository(ref *registry.Reference) (*remote.Repository, er
 }
 
 func newFileStore(ctx context.Context, ref *registry.Reference, manifestPath string) (*file.Store, error) {
+	// Clean up working directory to ensure a fresh start for each operation
+	if err := os.RemoveAll(workingDIR); err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to clean working directory: %w", err)
+	}
+
 	fs, err := file.New(workingDIR)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file store: %w", err)
@@ -110,7 +115,9 @@ func newFileStore(ctx context.Context, ref *registry.Reference, manifestPath str
 		return nil, fmt.Errorf("failed to get absolute path of %q: %w", manifestPath, err)
 	}
 
-	contentDesc, err := fs.Add(ctx, repoName(ref), contentMediaType, path)
+	// Use tag-specific name to avoid duplicates within the same file store
+	contentName := fmt.Sprintf("%s:%s", repoName(ref), ref.ReferenceOrDefault())
+	contentDesc, err := fs.Add(ctx, contentName, contentMediaType, path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add content: %w", err)
 	}
