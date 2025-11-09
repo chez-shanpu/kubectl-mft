@@ -11,8 +11,16 @@ import (
 type Info struct {
 	Repository string    `json:"repository" yaml:"repository"`
 	Tag        string    `json:"tag" yaml:"tag"`
-	Size       int64     `json:"size" yaml:"size"`
+	Size       string    `json:"size" yaml:"size"`
 	Created    time.Time `json:"created" yaml:"created"`
+}
+
+// DeleteResult represents the result of a delete operation
+type DeleteResult struct {
+	Repository   string
+	Tag          string
+	Size         string
+	RemovedBlobs int
 }
 
 type Repository interface {
@@ -22,6 +30,7 @@ type Repository interface {
 	Push(ctx context.Context) error
 	Pull(ctx context.Context) error
 	List(ctx context.Context) ([]Info, error)
+	Delete(ctx context.Context) (*DeleteResult, error)
 }
 
 // Dump retrieves and outputs a manifest from local OCI layout storage
@@ -76,4 +85,9 @@ func Push(ctx context.Context, r Repository) error {
 
 func List(ctx context.Context, r Repository) ([]Info, error) {
 	return r.List(ctx)
+}
+
+// Delete removes a manifest from local OCI layout storage
+func Delete(ctx context.Context, r Repository) (*DeleteResult, error) {
+	return r.Delete(ctx)
 }
