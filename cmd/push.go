@@ -9,12 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
-	"github.com/chez-shanpu/kubectl-mft/internal/repository"
-)
-
-const (
-	pushTagFlag      = "tag"
-	pushTagShortFlag = "t"
+	"github.com/chez-shanpu/kubectl-mft/internal/oci"
 )
 
 type PushOpts struct {
@@ -27,9 +22,9 @@ func init() {
 	rootCmd.AddCommand(pushCmd)
 
 	flag := pushCmd.Flags()
-	flag.StringVarP(&pushOpts.tag, pushTagFlag, pushTagShortFlag, "", "OCI reference for the manifest to push (e.g., registry.example.com/repo:tag)")
+	flag.StringVarP(&pushOpts.tag, TagFlag, TagShortFlag, "", "OCI reference for the manifest to push (e.g., registry.example.com/repo:tag)")
 
-	_ = pushCmd.MarkFlagRequired(pushTagFlag)
+	_ = pushCmd.MarkFlagRequired(TagFlag)
 }
 
 // pushCmd represents the push command
@@ -57,6 +52,9 @@ Examples:
 }
 
 func runPush(ctx context.Context) error {
-	r := repository.NewRepository(pushOpts.tag)
+	r, err := oci.NewRepository(pushOpts.tag)
+	if err != nil {
+		return err
+	}
 	return mft.Push(ctx, r)
 }
