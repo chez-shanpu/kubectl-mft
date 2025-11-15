@@ -223,6 +223,9 @@ var _ = Describe("Path Command", func() {
 
 			// Same content should point to same blob
 			Expect(path1).To(Equal(path3))
+
+			session = ExecuteKubectlMft("delete", "-t", tag3, "--force")
+			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 	})
 })

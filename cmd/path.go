@@ -9,12 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
-	"github.com/chez-shanpu/kubectl-mft/internal/repository"
-)
-
-const (
-	pathTagFlag      = "tag"
-	pathTagShortFlag = "t"
+	"github.com/chez-shanpu/kubectl-mft/internal/oci"
 )
 
 type PathOpts struct {
@@ -27,9 +22,9 @@ func init() {
 	rootCmd.AddCommand(pathCmd)
 
 	flag := pathCmd.Flags()
-	flag.StringVarP(&pathOpts.tag, pathTagFlag, pathTagShortFlag, "", "OCI reference for the manifest (e.g., registry.example.com/repo:tag)")
+	flag.StringVarP(&pathOpts.tag, TagFlag, TagShortFlag, "", "OCI reference for the manifest (e.g., registry.example.com/repo:tag)")
 
-	_ = pathCmd.MarkFlagRequired(pathTagFlag)
+	_ = pathCmd.MarkFlagRequired(TagFlag)
 }
 
 // pathCmd represents the path command
@@ -53,6 +48,15 @@ Examples:
 }
 
 func runPath(ctx context.Context) error {
-	r := repository.NewRepository(pathOpts.tag)
-	return mft.Path(ctx, r)
+	r, err := oci.NewRepository(pathOpts.tag)
+	if err != nil {
+		return err
+	}
+
+	res, err := mft.Path(ctx, r)
+	if err != nil {
+		return err
+	}
+	res.Print()
+	return nil
 }
