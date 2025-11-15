@@ -9,12 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
-	"github.com/chez-shanpu/kubectl-mft/internal/repository"
-)
-
-const (
-	pullTagFlag      = "tag"
-	pullTagShortFlag = "t"
+	"github.com/chez-shanpu/kubectl-mft/internal/oci"
 )
 
 type PullOpts struct {
@@ -27,9 +22,9 @@ func init() {
 	rootCmd.AddCommand(pullCmd)
 
 	flag := pullCmd.Flags()
-	flag.StringVarP(&pullOpts.tag, pullTagFlag, pullTagShortFlag, "", "OCI reference for the manifest to pull (e.g., registry.example.com/repo:tag)")
+	flag.StringVarP(&pullOpts.tag, TagFlag, TagShortFlag, "", "OCI reference for the manifest to pull (e.g., registry.example.com/repo:tag)")
 
-	_ = pullCmd.MarkFlagRequired(pullTagFlag)
+	_ = pullCmd.MarkFlagRequired(TagFlag)
 }
 
 // pullCmd represents the pull command
@@ -58,6 +53,9 @@ Examples:
 }
 
 func runPull(ctx context.Context) error {
-	r := repository.NewRepository(pullOpts.tag)
+	r, err := oci.NewRepository(pullOpts.tag)
+	if err != nil {
+		return err
+	}
 	return mft.Pull(ctx, r)
 }

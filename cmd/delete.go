@@ -13,22 +13,12 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
-	"github.com/chez-shanpu/kubectl-mft/internal/repository"
-)
-
-const (
-	deleteTagFlag      = "tag"
-	deleteTagShortFlag = "t"
-	deleteForceFlag    = "force"
-	deleteVerboseFlag  = "verbose"
-	deleteQuietFlag    = "quiet"
+	"github.com/chez-shanpu/kubectl-mft/internal/oci"
 )
 
 type DeleteOpts struct {
-	tag     string
-	force   bool
-	verbose bool
-	quiet   bool
+	tag   string
+	force bool
 }
 
 var deleteOpts DeleteOpts
@@ -37,12 +27,10 @@ func init() {
 	rootCmd.AddCommand(deleteCmd)
 
 	flag := deleteCmd.Flags()
-	flag.StringVarP(&deleteOpts.tag, deleteTagFlag, deleteTagShortFlag, "", "OCI reference for the manifest to delete (e.g., registry.example.com/repo:tag)")
-	flag.BoolVarP(&deleteOpts.force, deleteForceFlag, "f", false, "Skip confirmation prompt")
-	flag.BoolVarP(&deleteOpts.verbose, deleteVerboseFlag, "v", false, "Verbose output with detailed information")
-	flag.BoolVarP(&deleteOpts.quiet, deleteQuietFlag, "q", false, "Quiet mode with minimal output")
+	flag.StringVarP(&deleteOpts.tag, TagFlag, TagShortFlag, "", "OCI reference for the manifest to delete (e.g., registry.example.com/repo:tag)")
+	flag.BoolVarP(&deleteOpts.force, ForceFlag, ForceShortFlag, false, "Skip confirmation prompt")
 
-	_ = deleteCmd.MarkFlagRequired(deleteTagFlag)
+	_ = deleteCmd.MarkFlagRequired(TagFlag)
 }
 
 // deleteCmd represents the delete command
@@ -75,43 +63,28 @@ Examples:
 }
 
 func runDelete(ctx context.Context) error {
-	r := repository.NewRepository(deleteOpts.tag)
-
-	if !deleteOpts.force {
-		if !confirmDeletion(deleteOpts.tag) {
-			if !deleteOpts.quiet {
-				fmt.Println("Deletion cancelled")
-			}
-			return nil
-		}
-	}
-
-	result, err := mft.Delete(ctx, r)
+	r, err := oci.NewRepository(deleteOpts.tag)
 	if err != nil {
 		return err
 	}
 
-	if result == nil {
-		if !deleteOpts.quiet {
-			fmt.Fprintf(os.Stderr, "Warning: manifest %s not found locally\n", deleteOpts.tag)
+	if !deleteOpts.force {
+		if !confirmDeletion(deleteOpts.tag) {
+			fmt.Println("Deletion cancelled")
+			return nil
 		}
+	}
+
+	res, err := mft.Delete(ctx, r)
+	if err != nil {
+		return err
+	}
+	if res == nil {
+		fmt.Printf("Warning: manifest %s not found locally\n", deleteOpts.tag)
 		return nil
 	}
 
-	if deleteOpts.quiet {
-		return nil
-	}
-
-	if deleteOpts.verbose {
-		fmt.Printf("Deleted manifest:\n")
-		fmt.Printf("  Repository: %s\n", result.Repository)
-		fmt.Printf("  Tag:        %s\n", result.Tag)
-		fmt.Printf("  Size:       %s\n", result.Size)
-		fmt.Printf("  Removed blobs: %d\n", result.RemovedBlobs)
-	} else {
-		fmt.Printf("Deleted %s:%s\n", result.Repository, result.Tag)
-	}
-
+	res.Print()
 	return nil
 }
 

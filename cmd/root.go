@@ -9,6 +9,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	TagFlag      = "tag"
+	TagShortFlag = "t"
+
+	OutputFlag      = "output"
+	OutputShortFlag = "o"
+
+	FileFlag      = "file"
+	FileShortFlag = "f"
+
+	ForceFlag      = "force"
+	ForceShortFlag = "y"
+)
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:          "kubectl-mft",
