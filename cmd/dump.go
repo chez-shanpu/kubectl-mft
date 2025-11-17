@@ -5,18 +5,14 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"os"
 
 	"github.com/spf13/cobra"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
-	"github.com/chez-shanpu/kubectl-mft/internal/repository"
-)
-
-const (
-	dumpOutputFlag      = "output"
-	dumpOutputShortFlag = "o"
-	dumpTagFlag         = "tag"
-	dumpTagShortFlag    = "t"
+	"github.com/chez-shanpu/kubectl-mft/internal/oci"
 )
 
 type DumpOpts struct {
@@ -30,10 +26,10 @@ func init() {
 	rootCmd.AddCommand(dumpCmd)
 
 	flag := dumpCmd.Flags()
-	flag.StringVarP(&dumpOpts.output, dumpOutputFlag, dumpOutputShortFlag, "", "Output file path (default: stdout)")
-	flag.StringVarP(&dumpOpts.tag, dumpTagFlag, dumpTagShortFlag, "", "OCI reference for the manifest to dump (e.g., registry.example.com/repo:tag)")
+	flag.StringVarP(&dumpOpts.output, OutputFlag, OutputShortFlag, "", "Output file path (default: stdout)")
+	flag.StringVarP(&dumpOpts.tag, TagFlag, TagShortFlag, "", "OCI reference for the manifest to dump (e.g., registry.example.com/repo:tag)")
 
-	_ = dumpCmd.MarkFlagRequired(dumpTagFlag)
+	_ = dumpCmd.MarkFlagRequired(TagFlag)
 }
 
 // dumpCmd represents the dump command
@@ -57,7 +53,36 @@ Examples:
 	},
 }
 
-func runDump(ctx context.Context) error {
-	r := repository.NewRepository(dumpOpts.tag)
-	return mft.Dump(ctx, r, dumpOpts.output)
+func runDump(ctx context.Context) (err error) {
+	r, err := oci.NewRepository(dumpOpts.tag)
+	if err != nil {
+		return err
+	}
+
+	res, err := mft.Dump(ctx, r)
+	if err != nil {
+		return err
+	}
+
+	var w io.Writer
+	if dumpOpts.output == "" {
+		w = os.Stdout
+	} else {
+		f, err := os.Create(dumpOpts.output)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if cerr := f.Close(); cerr != nil && err == nil {
+				err = cerr
+			}
+		}()
+
+		w = f
+		// show output file path after writing
+		defer fmt.Println(dumpOpts.output)
+	}
+
+	_, err = io.Copy(w, res)
+	return err
 }

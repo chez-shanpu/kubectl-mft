@@ -5,21 +5,11 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
-	"github.com/chez-shanpu/kubectl-mft/internal/repository"
-)
-
-const (
-	listOutputFlag      = "output"
-	listOutputShortFlag = "o"
+	"github.com/chez-shanpu/kubectl-mft/internal/oci"
 )
 
 type ListOpts struct {
@@ -32,7 +22,7 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 
 	flag := listCmd.Flags()
-	flag.StringVarP(&listOpts.output, listOutputFlag, listOutputShortFlag, "table", "Output format (table, json, yaml)")
+	flag.StringVarP(&listOpts.output, OutputFlag, OutputShortFlag, "table", "Output format (table, json, yaml)")
 }
 
 // listCmd represents the list command
@@ -64,49 +54,12 @@ Examples:
 }
 
 func runList(ctx context.Context) error {
-	r := repository.NewRepository("")
-	infos, err := mft.List(ctx, r)
+	r := oci.NewRegistry()
+	res, err := mft.List(ctx, r)
 	if err != nil {
 		return err
 	}
 
-	switch listOpts.output {
-	case "table":
-		return printTable(infos)
-	case "json":
-		return printJSON(infos)
-	case "yaml":
-		return printYAML(infos)
-	default:
-		return fmt.Errorf("unsupported output format: %s (supported: table, json, yaml)", listOpts.output)
-	}
-}
-
-func printTable(infos []mft.Info) error {
-	if len(infos) == 0 {
-		fmt.Println("No manifests found")
-		return nil
-	}
-
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	fmt.Fprintln(w, "REPOSITORY\tTAG\tSIZE\tCREATED")
-
-	for _, info := range infos {
-		created := info.Created.Format("2006-01-02 15:04:05")
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", info.Repository, info.Tag, info.Size, created)
-	}
-
-	return w.Flush()
-}
-
-func printJSON(infos []mft.Info) error {
-	encoder := json.NewEncoder(os.Stdout)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(infos)
-}
-
-func printYAML(infos []mft.Info) error {
-	encoder := yaml.NewEncoder(os.Stdout)
-	defer encoder.Close()
-	return encoder.Encode(infos)
+	res.Sort()
+	return res.Print(mft.ListOutput(listOpts.output))
 }
