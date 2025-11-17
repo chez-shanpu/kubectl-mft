@@ -55,6 +55,27 @@ kubectl mft dump -t localhost:5000/myapp/config:v1.0.0 | kubectl apply -f -
 
 ## Installation
 
+### Download Binary from GitHub Releases
+
+Download the latest release for your platform from [GitHub Releases](https://github.com/chez-shanpu/kubectl-mft/releases).
+
+**Linux / macOS**
+
+```bash
+# Download and extract (replace VERSION, OS, and ARCH as needed)
+curl -L https://github.com/chez-shanpu/kubectl-mft/releases/download/VERSION/kubectl-mft_VERSION_OS_ARCH.tar.gz | tar xz
+
+# Move to a directory in your PATH
+sudo mv kubectl-mft /usr/local/bin/
+
+# Verify installation
+kubectl mft version
+```
+
+**Windows**
+
+Download the `.zip` file for your architecture from the releases page, extract it, and add the binary to your PATH.
+
 ### Using Go
 
 ```bash
@@ -120,7 +141,11 @@ kubectl mft list -o yaml
 **Get file path to manifest blob**
 
 ```bash
+# Get the file path
 kubectl mft path -t localhost:5000/myapp:v1.0.0
+
+# Use with kubectl debug --custom
+kubectl debug mypod -it --image busyboz --custom=$(kubectl mft path -t localhost:5000/debug-container)
 ```
 
 **Delete a manifest**

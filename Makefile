@@ -40,15 +40,19 @@ test-e2e:
 
 .PHONY: build
 build:
-	$(GO) build -o bin/ .
+	$(GO) build -ldflags "-X github.com/chez-shanpu/kubectl-mft/cmd.version=dev -X github.com/chez-shanpu/kubectl-mft/cmd.commit=$$(git rev-parse --short HEAD 2>/dev/null || echo 'none')" -o bin/ .
 
 .PHONY: clean
 clean:
 	-$(GO) clean
 	-rm $(RM_OPTS) $(BIN_DIR)
 
+.PHONY: check-goreleaser
+check-goreleaser:
+	goreleaser check
+
 .PHONY: check
-check: vet check-diff test
+check: vet check-diff test check-goreleaser
 
 .PHONY: check-all
 check-all: check test-e2e
