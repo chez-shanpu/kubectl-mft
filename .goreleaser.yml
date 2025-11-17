@@ -1,0 +1,102 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: kubectl-mft
+    binary: kubectl-mft
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/chez-shanpu/kubectl-mft/cmd.version={{.Version}}
+      - -X github.com/chez-shanpu/kubectl-mft/cmd.commit={{.ShortCommit}}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: kubectl-mft
+    formats: tar.gz
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE
+
+changelog:
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "Bug Fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+release:
+  github:
+    owner: chez-shanpu
+    name: kubectl-mft
+  draft: false
+  prerelease: auto
+  mode: append
+  header: |
+    ## kubectl-mft {{ .Tag }}
+
+    Release of kubectl-mft version {{ .Tag }}.
+
+  footer: |
+    ## Installation
+
+    ### Download Binary
+
+    **Linux / macOS**
+
+    ```bash
+    # Download and extract (replace OS and ARCH as needed)
+    curl -L https://github.com/chez-shanpu/kubectl-mft/releases/download/{{ .Tag }}/kubectl-mft_{{ .Tag }}_OS_ARCH.tar.gz | tar xz
+
+    # Move to a directory in your PATH
+    sudo mv kubectl-mft /usr/local/bin/
+
+    # Verify installation
+    kubectl mft version
+    ```
+
+    **Windows**
+
+    Download the `.zip` file for your architecture from the assets above, extract it, and add the binary to your PATH.
+
+    ### Using Go
+
+    ```bash
+    go install github.com/chez-shanpu/kubectl-mft@{{ .Tag }}
+    ```
+
+    ---
+
+    **Full Changelog**: https://github.com/chez-shanpu/kubectl-mft/compare/{{ .PreviousTag }}...{{ .Tag }}
