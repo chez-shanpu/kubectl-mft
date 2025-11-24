@@ -55,6 +55,27 @@ kubectl mft dump -t localhost:5000/myapp/config:v1.0.0 | kubectl apply -f -
 
 ## Installation
 
+### Using Krew (Recommended)
+
+[Krew](https://krew.sigs.k8s.io/) is the plugin manager for kubectl.
+
+```bash
+# Add the custom index
+kubectl krew index add mft https://github.com/chez-shanpu/kubectl-mft.git
+
+# Install kubectl-mft
+kubectl krew install mft/mft
+
+# Verify installation
+kubectl mft --help
+```
+
+To update:
+
+```bash
+kubectl krew upgrade mft/mft
+```
+
 ### Download Binary from GitHub Releases
 
 Download the latest release for your platform from [GitHub Releases](https://github.com/chez-shanpu/kubectl-mft/releases).
@@ -69,7 +90,7 @@ curl -L https://github.com/chez-shanpu/kubectl-mft/releases/download/VERSION/kub
 sudo mv kubectl-mft /usr/local/bin/
 
 # Verify installation
-kubectl mft version
+kubectl mft --help
 ```
 
 **Windows**
@@ -164,6 +185,16 @@ kubectl mft delete -t localhost:5000/myapp:v1.0.0 --force
 kubectl mft dump -t ghcr.io/myorg/manifests:v1.0.0 -o my-manifest.yaml
 ```
 
+**Copy a manifest to a new tag**
+
+```bash
+# Copy within the same repository
+kubectl mft cp ghcr.io/myorg/manifests:v1.0.0 ghcr.io/myorg/manifests:latest
+
+# Copy to a different repository
+kubectl mft cp ghcr.io/myorg/manifests:v1.0.0 ghcr.io/myorg/prod-manifests:v1.0.0
+```
+
 ## Command Reference
 
 | Command | Description |
@@ -175,6 +206,7 @@ kubectl mft dump -t ghcr.io/myorg/manifests:v1.0.0 -o my-manifest.yaml
 | `list` | List all locally stored manifests |
 | `path` | Get the file path to a manifest blob |
 | `delete` | Delete a manifest from local storage |
+| `cp` | Copy a manifest to a new tag in local storage |
 
 For detailed usage of each command, run `kubectl mft <command> --help`.
 
