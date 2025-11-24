@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Authors of kubectl-mft
+
 package mft
 
 import (
@@ -98,6 +101,7 @@ func List(ctx context.Context, r Registry) (*ListResult, error) {
 }
 
 type Repository interface {
+	Copy(ctx context.Context, dest string) error
 	Delete(ctx context.Context) (*DeleteResult, error)
 	Dump(ctx context.Context) (*DumpResult, error)
 	Path(ctx context.Context) (*PathResult, error)
@@ -150,6 +154,11 @@ func NewPathResult(path string) *PathResult {
 
 func (r *PathResult) Print() {
 	fmt.Println(r.path)
+}
+
+// Copy copies a manifest from the source repository to a new destination tag in local storage.
+func Copy(ctx context.Context, r Repository, dest string) error {
+	return r.Copy(ctx, dest)
 }
 
 // Delete removes a manifest from local OCI layout storage

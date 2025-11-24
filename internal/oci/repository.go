@@ -65,6 +65,48 @@ func NewRepository(tag string) (*Repository, error) {
 	return &Repository{ref: ref}, nil
 }
 
+func (r *Repository) Copy(ctx context.Context, dest string) error {
+	drepo, err := NewRepository(dest)
+	if err != nil {
+		return fmt.Errorf("creating repository: %w", err)
+	}
+
+	sstore, err := r.newOCILayoutStore()
+	if err != nil {
+		return err
+	}
+
+	// Check source exists
+	_, err = sstore.Resolve(ctx, r.ref.ReferenceOrDefault())
+	if err != nil {
+		if errors.Is(err, errdef.ErrNotFound) {
+			return fmt.Errorf("source tag %q not found in local storage", r.ref.ReferenceOrDefault())
+		} else {
+			return fmt.Errorf("failed to resolve source tag: %w", err)
+		}
+	}
+
+	destStore, err := drepo.newOCILayoutStore()
+	if err != nil {
+		return err
+	}
+
+	_, err = destStore.Resolve(ctx, drepo.ref.ReferenceOrDefault())
+	if err == nil {
+		return fmt.Errorf("destination tag %q already exists", drepo.ref.ReferenceOrDefault())
+	}
+	if !errors.Is(err, errdef.ErrNotFound) {
+		return fmt.Errorf("failed to check destination tag: %w", err)
+	}
+
+	_, err = oras.Copy(ctx, sstore, r.ref.ReferenceOrDefault(), destStore, drepo.ref.ReferenceOrDefault(), oras.DefaultCopyOptions)
+	if err != nil {
+		return fmt.Errorf("failed to copy manifest: %w", err)
+	}
+
+	return nil
+}
+
 func (r *Repository) Delete(ctx context.Context) (*mft.DeleteResult, error) {
 	layoutStore, err := r.newOCILayoutStore()
 	if err != nil {
@@ -103,7 +145,7 @@ func (r *Repository) Dump(ctx context.Context) (*mft.DumpResult, error) {
 
 	desc, err := layoutStore.Resolve(ctx, r.ref.ReferenceOrDefault())
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve reference %store: %w", r.ref.ReferenceOrDefault(), err)
+		return nil, fmt.Errorf("failed to resolve reference %s: %w", r.ref.ReferenceOrDefault(), err)
 	}
 
 	manifestJSON, err := content.FetchAll(ctx, layoutStore, desc)
