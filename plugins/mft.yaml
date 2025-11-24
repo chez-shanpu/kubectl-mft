@@ -3,7 +3,7 @@ kind: Plugin
 metadata:
   name: mft
 spec:
-  version: "v0.1.0"
+  version: "v0.2.0"
   homepage: https://github.com/chez-shanpu/kubectl-mft
   shortDescription: Manage Kubernetes manifests as OCI artifacts
   description: |
@@ -30,41 +30,41 @@ spec:
         matchLabels:
           os: darwin
           arch: amd64
-      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.1.0/kubectl-mft_0.1.0_darwin_amd64.tar.gz
-      sha256: "1fd90ec7b0cb4a5d5aa02bd47856803190dbaf2513504e49ee0e40eb65fc80c6"
+      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.2.0/kubectl-mft_0.2.0_darwin_amd64.tar.gz
+      sha256: "f2c9d27a8ed036109a2f26239d0b81757dd8fb6f2246f75df5fb82ddffbadea1"
       bin: kubectl-mft
     - selector:
         matchLabels:
           os: darwin
           arch: arm64
-      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.1.0/kubectl-mft_0.1.0_darwin_arm64.tar.gz
-      sha256: "fc0e1e3f1272372ade32db0d850ada3aa8396785ffe02834418a5bb5810d5f3d"
+      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.2.0/kubectl-mft_0.2.0_darwin_arm64.tar.gz
+      sha256: "dc0b407c6b4071cb1b8f6135025fcfe8c55e549295430225122021f342c99d42"
       bin: kubectl-mft
     - selector:
         matchLabels:
           os: linux
           arch: amd64
-      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.1.0/kubectl-mft_0.1.0_linux_amd64.tar.gz
-      sha256: "fff1ef458f4ca0891ade7cd98ca887567d2875a7945f0bfbb4c7701c477ee5be"
+      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.2.0/kubectl-mft_0.2.0_linux_amd64.tar.gz
+      sha256: "d2e3b1c0ed875c7c7372dc1297162c3433f6a73fd55048f6d1bba326501db177"
       bin: kubectl-mft
     - selector:
         matchLabels:
           os: linux
           arch: arm64
-      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.1.0/kubectl-mft_0.1.0_linux_arm64.tar.gz
-      sha256: "e1de660a02d1e6c5dc332c4db9dc061488544ef7c66da6ebe6cbf20f60ecc53f"
+      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.2.0/kubectl-mft_0.2.0_linux_arm64.tar.gz
+      sha256: "720cf4e96d44b1f19d745c1ff1bc20d66e443383a5b6d03198df5cbd71aa30b5"
       bin: kubectl-mft
     - selector:
         matchLabels:
           os: windows
           arch: amd64
-      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.1.0/kubectl-mft_0.1.0_windows_amd64.zip
-      sha256: "97358ba5f8ec722605ba750be99c410e710db16b599446e7c32a196ef3136372"
+      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.2.0/kubectl-mft_0.2.0_windows_amd64.zip
+      sha256: "2d154b5b9956185590b26d69cf7e4f61970a8e632278f6ebaf16cfb9da6b8c87"
       bin: kubectl-mft.exe
     - selector:
         matchLabels:
           os: windows
           arch: arm64
-      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.1.0/kubectl-mft_0.1.0_windows_arm64.zip
-      sha256: "1308c51a949366df536450c795557b21f019cff3f4ac4e0ce7a820c6ef2dcbd5"
+      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.2.0/kubectl-mft_0.2.0_windows_arm64.zip
+      sha256: "6bcc4fc2f350753c34d0ee353f6c0cd5c8e5e86f57cdf9c0249bb274f677e43a"
       bin: kubectl-mft.exe
