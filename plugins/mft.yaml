@@ -1,0 +1,70 @@
+apiVersion: krew.googlecontainertools.github.com/v1alpha2
+kind: Plugin
+metadata:
+  name: mft
+spec:
+  version: "v0.1.0"
+  homepage: https://github.com/chez-shanpu/kubectl-mft
+  shortDescription: Manage Kubernetes manifests as OCI artifacts
+  description: |
+    kubectl-mft is a plugin that makes manifest management as simple as
+    managing container images. No complex templating, no overlay structures
+    - just save, version, and retrieve your manifests using OCI registries.
+
+    Features:
+    - Simple workflow: pack, push, pull, and apply - just like Docker
+    - Version control: Tag and version manifests like container images
+    - Any OCI registry: Works with Docker Hub, GHCR, GAR, etc.
+    - Local caching: Efficiently manage locally stored manifests
+
+    Quick Start:
+      kubectl mft pack -f deployment.yaml -t myregistry/app:v1.0.0
+      kubectl mft push -t myregistry/app:v1.0.0
+      kubectl mft pull -t myregistry/app:v1.0.0
+      kubectl mft dump -t myregistry/app:v1.0.0 | kubectl apply -f -
+  caveats: |
+    This plugin uses Docker's credential store for registry authentication.
+    Make sure to run 'docker login' before pushing/pulling from private registries.
+  platforms:
+    - selector:
+        matchLabels:
+          os: darwin
+          arch: amd64
+      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.1.0/kubectl-mft_0.1.0_darwin_amd64.tar.gz
+      sha256: "1fd90ec7b0cb4a5d5aa02bd47856803190dbaf2513504e49ee0e40eb65fc80c6"
+      bin: kubectl-mft
+    - selector:
+        matchLabels:
+          os: darwin
+          arch: arm64
+      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.1.0/kubectl-mft_0.1.0_darwin_arm64.tar.gz
+      sha256: "fc0e1e3f1272372ade32db0d850ada3aa8396785ffe02834418a5bb5810d5f3d"
+      bin: kubectl-mft
+    - selector:
+        matchLabels:
+          os: linux
+          arch: amd64
+      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.1.0/kubectl-mft_0.1.0_linux_amd64.tar.gz
+      sha256: "fff1ef458f4ca0891ade7cd98ca887567d2875a7945f0bfbb4c7701c477ee5be"
+      bin: kubectl-mft
+    - selector:
+        matchLabels:
+          os: linux
+          arch: arm64
+      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.1.0/kubectl-mft_0.1.0_linux_arm64.tar.gz
+      sha256: "e1de660a02d1e6c5dc332c4db9dc061488544ef7c66da6ebe6cbf20f60ecc53f"
+      bin: kubectl-mft
+    - selector:
+        matchLabels:
+          os: windows
+          arch: amd64
+      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.1.0/kubectl-mft_0.1.0_windows_amd64.zip
+      sha256: "97358ba5f8ec722605ba750be99c410e710db16b599446e7c32a196ef3136372"
+      bin: kubectl-mft.exe
+    - selector:
+        matchLabels:
+          os: windows
+          arch: arm64
+      uri: https://github.com/chez-shanpu/kubectl-mft/releases/download/v0.1.0/kubectl-mft_0.1.0_windows_arm64.zip
+      sha256: "1308c51a949366df536450c795557b21f019cff3f4ac4e0ce7a820c6ef2dcbd5"
+      bin: kubectl-mft.exe
