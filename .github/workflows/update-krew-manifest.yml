@@ -1,8 +1,10 @@
 name: Update Krew Manifest
 
 on:
-  release:
-    types: [published]
+  workflow_run:
+    workflows: ["Release"]
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -10,6 +12,7 @@ permissions:
 jobs:
   update-krew-manifest:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,9 +20,14 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Get version from release
+      - name: Get version from release workflow
         id: get_version
-        run: echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+        run: |
+          # Get the tag that triggered the Release workflow
+          VERSION=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update krew manifest
         run: ./scripts/update-krew-manifest.sh ${{ steps.get_version.outputs.VERSION }}
