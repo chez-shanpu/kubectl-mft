@@ -1,3 +1,7 @@
+<img src="image.jpg" alt="kubectl-mft" width="100%">
+
+<!-- Image generated with Gemini Nano Banana Pro -->
+
 # kubectl-mft
 
 **The simplest way to manage Kubernetes manifests**
