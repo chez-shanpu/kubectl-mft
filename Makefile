@@ -4,8 +4,8 @@ GO = go
 GO_VET_OPTS = -v
 GO_TEST_OPTS=-v -race
 
-GO_FMT=gofmt
-GO_FMT_OPTS=-s -l
+GO_FMT=gofumpt
+GO_FMT_OPTS=-l -w
 
 GO_IMPORTS=goimports
 GO_IMPORTS_OPTS=-w -local github.com/chez-shanpu/kubectl-mft

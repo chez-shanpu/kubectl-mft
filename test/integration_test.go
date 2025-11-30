@@ -19,7 +19,6 @@ import (
 )
 
 var _ = Describe("Integration Tests", func() {
-
 	var manifestPath string
 
 	BeforeEach(func() {

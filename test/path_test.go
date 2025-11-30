@@ -18,7 +18,6 @@ import (
 )
 
 var _ = Describe("Path Command", func() {
-
 	var manifestPath string
 
 	BeforeEach(func() {
