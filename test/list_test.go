@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("List Command", func() {
-
 	var manifestPath string
 
 	BeforeEach(func() {

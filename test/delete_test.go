@@ -19,7 +19,6 @@ import (
 )
 
 var _ = Describe("Delete Command", func() {
-
 	var manifestPath string
 
 	BeforeEach(func() {
@@ -230,7 +229,6 @@ var _ = Describe("Delete Command", func() {
 			Eventually(session).Should(gexec.Exit(1))
 		})
 	})
-
 })
 
 // Helper function to count blobs in a directory

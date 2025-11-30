@@ -42,7 +42,7 @@ func (f *Fixtures) GetTempDir() string {
 // CreateManifestFile creates a manifest file with the given content
 func (f *Fixtures) CreateManifestFile(name, content string) string {
 	filePath := filepath.Join(f.tempDir, name)
-	err := os.WriteFile(filePath, []byte(content), 0644)
+	err := os.WriteFile(filePath, []byte(content), 0o644)
 	Expect(err).NotTo(HaveOccurred())
 	return filePath
 }

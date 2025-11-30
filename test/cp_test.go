@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("Copy Command", func() {
-
 	var manifestPath string
 	var sourceTag string
 

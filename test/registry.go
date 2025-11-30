@@ -43,7 +43,7 @@ func NewRegistry() *Registry {
 // Start starts the Docker registry container
 func (r *Registry) Start() {
 	// Create temporary directory for registry data
-	err := os.MkdirAll(r.tempDir, 0755)
+	err := os.MkdirAll(r.tempDir, 0o755)
 	Expect(err).NotTo(HaveOccurred())
 
 	cmd := exec.Command("docker", "run", "--rm",

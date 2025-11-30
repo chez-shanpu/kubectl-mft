@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("Dump Command", func() {
-
 	var manifestPath string
 	var testTag string
 
@@ -72,7 +71,7 @@ var _ = Describe("Dump Command", func() {
 
 			By("Creating an existing file")
 			outputPath := filepath.Join(testFixtures.GetTempDir(), "existing.yaml")
-			err := os.WriteFile(outputPath, []byte("old content"), 0644)
+			err := os.WriteFile(outputPath, []byte("old content"), 0o644)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Dumping to the existing file")
