@@ -26,10 +26,10 @@ kubectl-mft is a kubectl plugin that makes manifest management as simple as mana
 **As simple as Docker images**
 
 ```bash
-kubectl mft pack -f deployment.yaml -t myregistry/app:v1.0.0
-kubectl mft push -t myregistry/app:v1.0.0
-kubectl mft pull -t myregistry/app:v1.0.0
-kubectl mft dump -t myregistry/app:v1.0.0 | kubectl apply -f -
+kubectl mft pack -f deployment.yaml myregistry/app:v1.0.0
+kubectl mft push myregistry/app:v1.0.0
+kubectl mft pull myregistry/app:v1.0.0
+kubectl mft dump myregistry/app:v1.0.0 | kubectl apply -f -
 ```
 
 Under the hood, it uses OCI registries—the same technology that stores your container images.
@@ -45,16 +45,16 @@ Under the hood, it uses OCI registries—the same technology that stores your co
 
 ```bash
 # Package a Kubernetes manifest
-kubectl mft pack -f deployment.yaml -t localhost:5000/myapp/config:v1.0.0
+kubectl mft pack -f deployment.yaml localhost:5000/myapp/config:v1.0.0
 
 # Push to OCI registry
-kubectl mft push -t localhost:5000/myapp/config:v1.0.0
+kubectl mft push localhost:5000/myapp/config:v1.0.0
 
 # Pull from OCI registry
-kubectl mft pull -t localhost:5000/myapp/config:v1.0.0
+kubectl mft pull localhost:5000/myapp/config:v1.0.0
 
 # Dump and apply to cluster
-kubectl mft dump -t localhost:5000/myapp/config:v1.0.0 | kubectl apply -f -
+kubectl mft dump localhost:5000/myapp/config:v1.0.0 | kubectl apply -f -
 ```
 
 ## Installation
@@ -123,7 +123,7 @@ make build
 1. **Pack a manifest into OCI layout**
 
 ```bash
-kubectl mft pack -f my-deployment.yaml -t ghcr.io/myorg/manifests:v1.0.0
+kubectl mft pack -f my-deployment.yaml ghcr.io/myorg/manifests:v1.0.0
 ```
 
 2. **Push to a registry**
@@ -133,19 +133,19 @@ kubectl mft pack -f my-deployment.yaml -t ghcr.io/myorg/manifests:v1.0.0
 docker login ghcr.io
 
 # Push the manifest
-kubectl mft push -t ghcr.io/myorg/manifests:v1.0.0
+kubectl mft push ghcr.io/myorg/manifests:v1.0.0
 ```
 
 3. **Pull from a registry**
 
 ```bash
-kubectl mft pull -t ghcr.io/myorg/manifests:v1.0.0
+kubectl mft pull ghcr.io/myorg/manifests:v1.0.0
 ```
 
 4. **Apply to cluster**
 
 ```bash
-kubectl mft dump -t ghcr.io/myorg/manifests:v1.0.0 | kubectl apply -f -
+kubectl mft dump ghcr.io/myorg/manifests:v1.0.0 | kubectl apply -f -
 ```
 
 ### Simple Tag Names
@@ -154,8 +154,8 @@ You can use simple tag names without a registry prefix. They are automatically s
 
 ```bash
 # These are equivalent:
-kubectl mft pack -f deployment.yaml -t myapp:v1.0.0
-kubectl mft pack -f deployment.yaml -t local/myapp:v1.0.0
+kubectl mft pack -f deployment.yaml myapp:v1.0.0
+kubectl mft pack -f deployment.yaml local/myapp:v1.0.0
 
 # List shows them without the "local/" prefix
 kubectl mft list
@@ -163,7 +163,7 @@ kubectl mft list
 # myapp        v1.0.0   694B   2025-01-15 10:30
 
 # Dump using simple tag
-kubectl mft dump -t myapp:v1.0.0 | kubectl apply -f -
+kubectl mft dump myapp:v1.0.0 | kubectl apply -f -
 ```
 
 ### Managing Local Manifests
@@ -185,26 +185,26 @@ kubectl mft list -o yaml
 
 ```bash
 # Get the file path
-kubectl mft path -t localhost:5000/myapp:v1.0.0
+kubectl mft path localhost:5000/myapp:v1.0.0
 
 # Use with kubectl debug --custom
-kubectl debug mypod -it --image busyboz --custom=$(kubectl mft path -t localhost:5000/debug-container)
+kubectl debug mypod -it --image busyboz --custom=$(kubectl mft path localhost:5000/debug-container)
 ```
 
 **Delete a manifest**
 
 ```bash
 # With confirmation prompt
-kubectl mft delete -t localhost:5000/myapp:v1.0.0
+kubectl mft delete localhost:5000/myapp:v1.0.0
 
 # Skip confirmation
-kubectl mft delete -t localhost:5000/myapp:v1.0.0 --force
+kubectl mft delete localhost:5000/myapp:v1.0.0 --force
 ```
 
 **Save manifest to file**
 
 ```bash
-kubectl mft dump -t ghcr.io/myorg/manifests:v1.0.0 -o my-manifest.yaml
+kubectl mft dump ghcr.io/myorg/manifests:v1.0.0 -o my-manifest.yaml
 ```
 
 **Copy a manifest to a new tag**

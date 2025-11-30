@@ -17,9 +17,6 @@ var (
 )
 
 const (
-	TagFlag      = "tag"
-	TagShortFlag = "t"
-
 	OutputFlag      = "output"
 	OutputShortFlag = "o"
 

@@ -27,18 +27,18 @@ var _ = Describe("Dump Command", func() {
 	})
 
 	AfterEach(func() {
-		session := ExecuteKubectlMft("delete", "-t", testTag, "--force")
+		session := ExecuteKubectlMft("delete", testTag, "--force")
 		Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 	})
 
 	Context("when dumping manifest to stdout", func() {
 		It("should successfully dump the packed manifest", func() {
 			By("First packing the manifest")
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", testTag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 			By("Then dumping the manifest to stdout")
-			session = ExecuteKubectlMft("dump", "-t", testTag)
+			session = ExecuteKubectlMft("dump", testTag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying the output matches the original manifest")
@@ -50,12 +50,12 @@ var _ = Describe("Dump Command", func() {
 	Context("when dumping manifest to file", func() {
 		It("should successfully dump the manifest to specified file", func() {
 			By("First packing the manifest")
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", testTag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 			By("Then dumping to output file")
 			outputPath := filepath.Join(testFixtures.GetTempDir(), "dumped.yaml")
-			session = ExecuteKubectlMft("dump", "-t", testTag, "-o", outputPath)
+			session = ExecuteKubectlMft("dump", testTag, "-o", outputPath)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying the output file exists and matches the original manifest")
@@ -67,7 +67,7 @@ var _ = Describe("Dump Command", func() {
 
 		It("should overwrite existing file", func() {
 			By("First packing the manifest")
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", testTag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 			By("Creating an existing file")
@@ -76,7 +76,7 @@ var _ = Describe("Dump Command", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Dumping to the existing file")
-			session = ExecuteKubectlMft("dump", "-t", testTag, "-o", outputPath)
+			session = ExecuteKubectlMft("dump", testTag, "-o", outputPath)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying the file was overwritten")
@@ -90,7 +90,7 @@ var _ = Describe("Dump Command", func() {
 	Context("when dumping non-existent manifest", func() {
 		It("should fail with appropriate error message", func() {
 			nonExistentTag := CreateUniqueTag("non-existent")
-			session := ExecuteKubectlMft("dump", "-t", nonExistentTag)
+			session := ExecuteKubectlMft("dump", nonExistentTag)
 			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).To(gbytes.Say("failed to resolve reference"))
 		})
@@ -98,13 +98,13 @@ var _ = Describe("Dump Command", func() {
 
 	Context("when simple tag does not exist", func() {
 		It("should fail with not found error", func() {
-			session := ExecuteKubectlMft("dump", "-t", "nonexistent-simple-tag")
+			session := ExecuteKubectlMft("dump", "nonexistent-simple-tag")
 			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).To(gbytes.Say("not found"))
 		})
 	})
 
-	Context("when tag flag is missing", func() {
+	Context("when tag argument is missing", func() {
 		It("should fail with appropriate error message", func() {
 			session := ExecuteKubectlMft("dump")
 			Eventually(session).Should(gexec.Exit(1))

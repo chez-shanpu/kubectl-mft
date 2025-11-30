@@ -24,15 +24,13 @@ func init() {
 
 	flag := packCmd.Flags()
 	flag.StringVarP(&packOpts.filePath, FileFlag, FileShortFlag, "", "Path to the manifest file to pack")
-	flag.StringVarP(&packOpts.tag, TagFlag, TagShortFlag, "", "OCI reference for the packed manifest (e.g., registry.example.com/repo:tag)")
 
 	_ = packCmd.MarkFlagRequired(FileFlag)
-	_ = packCmd.MarkFlagRequired(TagFlag)
 }
 
 // packCmd represents the pack command
 var packCmd = &cobra.Command{
-	Use:   "pack",
+	Use:   "pack <tag>",
 	Short: "Save a Kubernetes manifest into an OCI image layout",
 	Long: `Save packages a single Kubernetes manifest file into an OCI (Open Container
 Initiative) image layout format for distribution and versioning.
@@ -48,14 +46,16 @@ The packed manifest is stored in OCI image layout format, allowing it to be:
 
 Examples:
   # Save a manifest file with a full OCI reference
-  kubectl mft pack -f deployment.yaml -t registry.example.com/manifests/app:v1.0.0
+  kubectl mft pack -f deployment.yaml registry.example.com/manifests/app:v1.0.0
 
   # Save a manifest for local OCI layout (using localhost)
-  kubectl mft pack -f app.yaml -t localhost/myapp:production-v2.1.0
+  kubectl mft pack -f app.yaml localhost/myapp:production-v2.1.0
 
   # Save a manifest with Docker Hub reference
-  kubectl mft pack -f service.yaml -t docker.io/myorg/manifests:latest`,
+  kubectl mft pack -f service.yaml docker.io/myorg/manifests:latest`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		packOpts.tag = args[0]
 		return runPack(cmd.Context())
 	},
 }

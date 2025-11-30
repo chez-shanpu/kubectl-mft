@@ -20,16 +20,11 @@ var pathOpts PathOpts
 
 func init() {
 	rootCmd.AddCommand(pathCmd)
-
-	flag := pathCmd.Flags()
-	flag.StringVarP(&pathOpts.tag, TagFlag, TagShortFlag, "", "OCI reference for the manifest (e.g., registry.example.com/repo:tag)")
-
-	_ = pathCmd.MarkFlagRequired(TagFlag)
 }
 
 // pathCmd represents the path command
 var pathCmd = &cobra.Command{
-	Use:   "path",
+	Use:   "path <tag>",
 	Short: "Get the file system path to a manifest in local OCI layout storage",
 	Long: `Path retrieves the file system path to a Kubernetes manifest stored in local OCI layout.
 
@@ -38,11 +33,13 @@ The manifest must have been previously packed using the 'pack' command or pulled
 
 Examples:
   # Get the path to a manifest
-  kubectl mft path -t registry.example.com/manifests/app:v1.0.0
+  kubectl mft path registry.example.com/manifests/app:v1.0.0
 
   # Use with kubectl debug --custom option
-  kubectl debug my-pod --custom $(kubectl mft path -t localhost/debug-container:latest)`,
+  kubectl debug my-pod --custom $(kubectl mft path localhost/debug-container:latest)`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		pathOpts.tag = args[0]
 		return runPath(cmd.Context())
 	},
 }

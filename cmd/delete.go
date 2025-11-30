@@ -27,15 +27,12 @@ func init() {
 	rootCmd.AddCommand(deleteCmd)
 
 	flag := deleteCmd.Flags()
-	flag.StringVarP(&deleteOpts.tag, TagFlag, TagShortFlag, "", "OCI reference for the manifest to delete (e.g., registry.example.com/repo:tag)")
 	flag.BoolVarP(&deleteOpts.force, ForceFlag, ForceShortFlag, false, "Skip confirmation prompt")
-
-	_ = deleteCmd.MarkFlagRequired(TagFlag)
 }
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete <tag>",
 	Short: "Delete a manifest from local OCI layout storage",
 	Long: `Delete removes a Kubernetes manifest from local OCI layout storage.
 
@@ -47,17 +44,19 @@ By default, a confirmation prompt is shown before deletion. Use the --force flag
 
 Examples:
   # Delete a manifest with confirmation
-  kubectl mft delete -t registry.example.com/manifests/app:v1.0.0
+  kubectl mft delete registry.example.com/manifests/app:v1.0.0
 
   # Delete without confirmation
-  kubectl mft delete -t localhost/myapp:latest --force
+  kubectl mft delete localhost/myapp:latest --force
 
   # Delete with verbose output
-  kubectl mft delete -t localhost/myapp:latest -v
+  kubectl mft delete localhost/myapp:latest -v
 
   # Delete quietly (no output on success)
-  kubectl mft delete -t localhost/myapp:latest -q`,
+  kubectl mft delete localhost/myapp:latest -q`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		deleteOpts.tag = args[0]
 		return runDelete(cmd.Context())
 	},
 }

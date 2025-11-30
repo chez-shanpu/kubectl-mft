@@ -27,14 +27,11 @@ func init() {
 
 	flag := dumpCmd.Flags()
 	flag.StringVarP(&dumpOpts.output, OutputFlag, OutputShortFlag, "", "Output file path (default: stdout)")
-	flag.StringVarP(&dumpOpts.tag, TagFlag, TagShortFlag, "", "OCI reference for the manifest to dump (e.g., registry.example.com/repo:tag)")
-
-	_ = dumpCmd.MarkFlagRequired(TagFlag)
 }
 
 // dumpCmd represents the dump command
 var dumpCmd = &cobra.Command{
-	Use:   "dump",
+	Use:   "dump <tag>",
 	Short: "Dump a manifest from local OCI layout storage",
 	Long: `Dump retrieves and outputs a Kubernetes manifest from local OCI layout storage.
 
@@ -44,11 +41,13 @@ previously packed using the 'pack' command.
 
 Examples:
   # Dump manifest to stdout
-  kubectl mft dump -t registry.example.com/manifests/app:v1.0.0
+  kubectl mft dump registry.example.com/manifests/app:v1.0.0
 
   # Dump manifest to a file
-  kubectl mft dump -t localhost/myapp:latest -o restored-manifest.yaml`,
+  kubectl mft dump localhost/myapp:latest -o restored-manifest.yaml`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		dumpOpts.tag = args[0]
 		return runDump(cmd.Context())
 	},
 }

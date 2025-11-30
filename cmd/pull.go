@@ -20,16 +20,11 @@ var pullOpts PullOpts
 
 func init() {
 	rootCmd.AddCommand(pullCmd)
-
-	flag := pullCmd.Flags()
-	flag.StringVarP(&pullOpts.tag, TagFlag, TagShortFlag, "", "OCI reference for the manifest to pull (e.g., registry.example.com/repo:tag)")
-
-	_ = pullCmd.MarkFlagRequired(TagFlag)
 }
 
 // pullCmd represents the pull command
 var pullCmd = &cobra.Command{
-	Use:   "pull",
+	Use:   "pull <tag>",
 	Short: "Pull a manifest from an OCI registry",
 	Long: `Pull downloads a previously pushed Kubernetes manifest from an OCI-compliant registry
 to local storage for further use.
@@ -40,14 +35,16 @@ into the source registry using 'docker login' before pulling.
 
 Examples:
   # Pull manifest from Docker Hub
-  kubectl mft pull -t docker.io/myuser/my-app:v1.0.0
-  
+  kubectl mft pull docker.io/myuser/my-app:v1.0.0
+
   # Pull from a private registry
-  kubectl mft pull -t registry.company.com/team/app:latest
-  
+  kubectl mft pull registry.company.com/team/app:latest
+
   # Pull from localhost registry
-  kubectl mft pull -t localhost:5000/test-app:dev`,
+  kubectl mft pull localhost:5000/test-app:dev`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		pullOpts.tag = args[0]
 		return runPull(cmd.Context())
 	},
 }
