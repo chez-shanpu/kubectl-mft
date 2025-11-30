@@ -31,13 +31,13 @@ var _ = Describe("Delete Command", func() {
 
 		BeforeEach(func() {
 			testTag = CreateUniqueTag("delete-single")
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", testTag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 		})
 
 		It("should successfully delete the manifest", func() {
 			By("Deleting the manifest")
-			session := ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session := ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying output contains deletion information")
@@ -60,7 +60,7 @@ var _ = Describe("Delete Command", func() {
 		})
 
 		It("should show deletion confirmation in output", func() {
-			session := ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session := ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			output := string(session.Out.Contents())
@@ -76,7 +76,7 @@ var _ = Describe("Delete Command", func() {
 
 		BeforeEach(func() {
 			testTag = "localhost:5000/blob-cleanup-test:v1.0.0"
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", testTag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 			repoDir = filepath.Join(testStorageDir, "localhost:5000", "blob-cleanup-test")
@@ -92,7 +92,7 @@ var _ = Describe("Delete Command", func() {
 			Expect(initialBlobCount).To(BeNumerically(">", 0))
 
 			By("Deleting the manifest")
-			session := ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session := ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying repository directory is removed (last tag)")
@@ -112,23 +112,23 @@ var _ = Describe("Delete Command", func() {
 			repoDir = filepath.Join(testStorageDir, "localhost:5000", "multi-tag-delete")
 
 			// Pack the same manifest twice (will share blobs)
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", tag1)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, tag1)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
-			session = ExecuteKubectlMft("pack", "-f", manifestPath, "-t", tag2)
+			session = ExecuteKubectlMft("pack", "-f", manifestPath, tag2)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 		})
 
 		AfterEach(func() {
 			for _, tag := range []string{tag1, tag2} {
-				session := ExecuteKubectlMft("delete", "-t", tag, "--force")
+				session := ExecuteKubectlMft("delete", tag, "--force")
 				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			}
 		})
 
 		It("should keep other tags when deleting one tag", func() {
 			By("Deleting only tag1")
-			session := ExecuteKubectlMft("delete", "-t", tag1, "--force")
+			session := ExecuteKubectlMft("delete", tag1, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying tag2 still exists")
@@ -163,7 +163,7 @@ var _ = Describe("Delete Command", func() {
 			Expect(initialBlobCount).To(BeNumerically(">", 0))
 
 			By("Deleting tag1")
-			session := ExecuteKubectlMft("delete", "-t", tag1, "--force")
+			session := ExecuteKubectlMft("delete", tag1, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying some blobs still exist (shared with tag2)")
@@ -171,20 +171,20 @@ var _ = Describe("Delete Command", func() {
 			Expect(remainingBlobCount).To(BeNumerically(">", 0))
 
 			By("Verifying tag2 can still be dumped")
-			session = ExecuteKubectlMft("dump", "-t", tag2)
+			session = ExecuteKubectlMft("dump", tag2)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
 		It("should remove repository directory when deleting last tag", func() {
 			By("Deleting tag1")
-			session := ExecuteKubectlMft("delete", "-t", tag1, "--force")
+			session := ExecuteKubectlMft("delete", tag1, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying repository still exists")
 			Expect(repoDir).To(BeADirectory())
 
 			By("Deleting tag2 (last tag)")
-			session = ExecuteKubectlMft("delete", "-t", tag2, "--force")
+			session = ExecuteKubectlMft("delete", tag2, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying repository directory is removed")
@@ -195,7 +195,7 @@ var _ = Describe("Delete Command", func() {
 	Context("when deleting non-existent tag (idempotency)", func() {
 		It("should succeed without error", func() {
 			nonExistentTag := CreateUniqueTag("non-existent")
-			session := ExecuteKubectlMft("delete", "-t", nonExistentTag, "--force")
+			session := ExecuteKubectlMft("delete", nonExistentTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
@@ -203,28 +203,28 @@ var _ = Describe("Delete Command", func() {
 			testTag := CreateUniqueTag("delete-twice")
 
 			By("Packing a manifest")
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", testTag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 			By("Deleting first time")
-			session = ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session = ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Deleting second time (should be idempotent)")
-			session = ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session = ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 	})
 
 	Context("when simple tag does not exist", func() {
 		It("should show not found warning", func() {
-			session := ExecuteKubectlMft("delete", "-t", "nonexistent-simple-tag", "--force")
+			session := ExecuteKubectlMft("delete", "nonexistent-simple-tag", "--force")
 			Eventually(session).Should(gexec.Exit(0))
 			Expect(session).To(gbytes.Say("not found"))
 		})
 	})
 
-	Context("when tag flag is missing", func() {
+	Context("when tag argument is missing", func() {
 		It("should fail with appropriate error message", func() {
 			session := ExecuteKubectlMft("delete")
 			Eventually(session).Should(gexec.Exit(1))

@@ -18,10 +18,10 @@ spec:
     - Local caching: Efficiently manage locally stored manifests
 
     Quick Start:
-      kubectl mft pack -f deployment.yaml -t myregistry/app:v1.0.0
-      kubectl mft push -t myregistry/app:v1.0.0
-      kubectl mft pull -t myregistry/app:v1.0.0
-      kubectl mft dump -t myregistry/app:v1.0.0 | kubectl apply -f -
+      kubectl mft pack -f deployment.yaml myregistry/app:v1.0.0
+      kubectl mft push myregistry/app:v1.0.0
+      kubectl mft pull myregistry/app:v1.0.0
+      kubectl mft dump myregistry/app:v1.0.0 | kubectl apply -f -
   caveats: |
     This plugin uses Docker's credential store for registry authentication.
     Make sure to run 'docker login' before pushing/pulling from private registries.

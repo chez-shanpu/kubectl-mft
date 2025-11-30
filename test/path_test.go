@@ -30,17 +30,17 @@ var _ = Describe("Path Command", func() {
 
 		BeforeEach(func() {
 			testTag = CreateUniqueTag("path-test")
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", testTag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 		})
 
 		AfterEach(func() {
-			session := ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session := ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
 		It("should successfully return the blob path", func() {
-			session := ExecuteKubectlMft("path", "-t", testTag)
+			session := ExecuteKubectlMft("path", testTag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			output := strings.TrimSpace(string(session.Out.Contents()))
@@ -49,7 +49,7 @@ var _ = Describe("Path Command", func() {
 		})
 
 		It("should return a path that exists", func() {
-			session := ExecuteKubectlMft("path", "-t", testTag)
+			session := ExecuteKubectlMft("path", testTag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			blobPath := strings.TrimSpace(string(session.Out.Contents()))
@@ -57,7 +57,7 @@ var _ = Describe("Path Command", func() {
 		})
 
 		It("should return path in OCI layout structure", func() {
-			session := ExecuteKubectlMft("path", "-t", testTag)
+			session := ExecuteKubectlMft("path", testTag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			blobPath := strings.TrimSpace(string(session.Out.Contents()))
@@ -70,7 +70,7 @@ var _ = Describe("Path Command", func() {
 		})
 
 		It("should point to correct blob file with manifest content", func() {
-			session := ExecuteKubectlMft("path", "-t", testTag)
+			session := ExecuteKubectlMft("path", testTag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			blobPath := strings.TrimSpace(string(session.Out.Contents()))
@@ -85,11 +85,11 @@ var _ = Describe("Path Command", func() {
 		})
 
 		It("should be consistent across multiple calls", func() {
-			session1 := ExecuteKubectlMft("path", "-t", testTag)
+			session1 := ExecuteKubectlMft("path", testTag)
 			Eventually(session1, 10*time.Second).Should(gexec.Exit(0))
 			path1 := strings.TrimSpace(string(session1.Out.Contents()))
 
-			session2 := ExecuteKubectlMft("path", "-t", testTag)
+			session2 := ExecuteKubectlMft("path", testTag)
 			Eventually(session2, 10*time.Second).Should(gexec.Exit(0))
 			path2 := strings.TrimSpace(string(session2.Out.Contents()))
 
@@ -100,7 +100,7 @@ var _ = Describe("Path Command", func() {
 	Context("when getting path for non-existent tag", func() {
 		It("should fail with appropriate error message", func() {
 			nonExistentTag := CreateUniqueTag("non-existent")
-			session := ExecuteKubectlMft("path", "-t", nonExistentTag)
+			session := ExecuteKubectlMft("path", nonExistentTag)
 			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).To(gbytes.Say("failed to resolve reference"))
 		})
@@ -108,13 +108,13 @@ var _ = Describe("Path Command", func() {
 
 	Context("when simple tag does not exist", func() {
 		It("should fail with not found error", func() {
-			session := ExecuteKubectlMft("path", "-t", "nonexistent-simple-tag")
+			session := ExecuteKubectlMft("path", "nonexistent-simple-tag")
 			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).To(gbytes.Say("not found"))
 		})
 	})
 
-	Context("when tag flag is missing", func() {
+	Context("when tag argument is missing", func() {
 		It("should fail with appropriate error message", func() {
 			session := ExecuteKubectlMft("path")
 			Eventually(session).Should(gexec.Exit(1))
@@ -128,27 +128,27 @@ var _ = Describe("Path Command", func() {
 			repo1Tag = "localhost:5000/repo-a:v1.0.0"
 			repo2Tag = "localhost:5000/repo-b:v1.0.0"
 
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", repo1Tag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, repo1Tag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
-			session = ExecuteKubectlMft("pack", "-f", manifestPath, "-t", repo2Tag)
+			session = ExecuteKubectlMft("pack", "-f", manifestPath, repo2Tag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 		})
 
 		AfterEach(func() {
-			session := ExecuteKubectlMft("delete", "-t", repo1Tag, "--force")
+			session := ExecuteKubectlMft("delete", repo1Tag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
-			session = ExecuteKubectlMft("delete", "-t", repo2Tag, "--force")
+			session = ExecuteKubectlMft("delete", repo2Tag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
 		It("should return paths in different repository directories", func() {
-			session1 := ExecuteKubectlMft("path", "-t", repo1Tag)
+			session1 := ExecuteKubectlMft("path", repo1Tag)
 			Eventually(session1, 10*time.Second).Should(gexec.Exit(0))
 			path1 := strings.TrimSpace(string(session1.Out.Contents()))
 
-			session2 := ExecuteKubectlMft("path", "-t", repo2Tag)
+			session2 := ExecuteKubectlMft("path", repo2Tag)
 			Eventually(session2, 10*time.Second).Should(gexec.Exit(0))
 			path2 := strings.TrimSpace(string(session2.Out.Contents()))
 
@@ -172,27 +172,27 @@ var _ = Describe("Path Command", func() {
 			manifest1 = testFixtures.CreateManifestFile("manifest1.yaml", testFixtures.GetSimpleManifest())
 			manifest2 = testFixtures.CreateManifestFile("manifest2.yaml", testFixtures.GetComplexManifest())
 
-			session := ExecuteKubectlMft("pack", "-f", manifest1, "-t", tag1)
+			session := ExecuteKubectlMft("pack", "-f", manifest1, tag1)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
-			session = ExecuteKubectlMft("pack", "-f", manifest2, "-t", tag2)
+			session = ExecuteKubectlMft("pack", "-f", manifest2, tag2)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 		})
 
 		AfterEach(func() {
-			session := ExecuteKubectlMft("delete", "-t", tag1, "--force")
+			session := ExecuteKubectlMft("delete", tag1, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
-			session = ExecuteKubectlMft("delete", "-t", tag2, "--force")
+			session = ExecuteKubectlMft("delete", tag2, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
 		It("should return different blob paths for different content", func() {
-			session1 := ExecuteKubectlMft("path", "-t", tag1)
+			session1 := ExecuteKubectlMft("path", tag1)
 			Eventually(session1, 10*time.Second).Should(gexec.Exit(0))
 			path1 := strings.TrimSpace(string(session1.Out.Contents()))
 
-			session2 := ExecuteKubectlMft("path", "-t", tag2)
+			session2 := ExecuteKubectlMft("path", tag2)
 			Eventually(session2, 10*time.Second).Should(gexec.Exit(0))
 			path2 := strings.TrimSpace(string(session2.Out.Contents()))
 
@@ -210,21 +210,21 @@ var _ = Describe("Path Command", func() {
 		It("should have same blob path for identical content", func() {
 			// Pack the same manifest with different tag
 			tag3 := baseRepo + ":v3.0.0"
-			session := ExecuteKubectlMft("pack", "-f", manifest1, "-t", tag3)
+			session := ExecuteKubectlMft("pack", "-f", manifest1, tag3)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
-			session1 := ExecuteKubectlMft("path", "-t", tag1)
+			session1 := ExecuteKubectlMft("path", tag1)
 			Eventually(session1, 10*time.Second).Should(gexec.Exit(0))
 			path1 := strings.TrimSpace(string(session1.Out.Contents()))
 
-			session3 := ExecuteKubectlMft("path", "-t", tag3)
+			session3 := ExecuteKubectlMft("path", tag3)
 			Eventually(session3, 10*time.Second).Should(gexec.Exit(0))
 			path3 := strings.TrimSpace(string(session3.Out.Contents()))
 
 			// Same content should point to same blob
 			Expect(path1).To(Equal(path3))
 
-			session = ExecuteKubectlMft("delete", "-t", tag3, "--force")
+			session = ExecuteKubectlMft("delete", tag3, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 	})

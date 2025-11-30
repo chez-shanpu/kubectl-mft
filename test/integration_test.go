@@ -34,13 +34,13 @@ var _ = Describe("Integration Tests", func() {
 		})
 
 		AfterEach(func() {
-			session := ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session := ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
 		It("should complete full lifecycle successfully", func() {
 			By("Packing a manifest")
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", testTag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying it appears in list")
@@ -53,7 +53,7 @@ var _ = Describe("Integration Tests", func() {
 
 			By("Dumping the manifest")
 			outputPath := filepath.Join(testFixtures.GetTempDir(), "dumped.yaml")
-			session = ExecuteKubectlMft("dump", "-t", testTag, "-o", outputPath)
+			session = ExecuteKubectlMft("dump", testTag, "-o", outputPath)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			Expect(outputPath).To(BeAnExistingFile())
 
@@ -65,7 +65,7 @@ var _ = Describe("Integration Tests", func() {
 			Expect(dumpedContent).To(Equal(originalContent))
 
 			By("Deleting the manifest")
-			session = ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session = ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying it no longer appears in list")
@@ -94,29 +94,29 @@ var _ = Describe("Integration Tests", func() {
 		})
 
 		AfterEach(func() {
-			session := ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session := ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
 		It("should push and pull successfully", func() {
 			By("Packing a manifest")
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", testTag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 			By("Pushing to registry")
-			session = ExecuteKubectlMft("push", "-t", testTag)
+			session = ExecuteKubectlMft("push", testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 			By("Deleting local copy")
-			session = ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session = ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Pulling from registry")
-			session = ExecuteKubectlMft("pull", "-t", testTag)
+			session = ExecuteKubectlMft("pull", testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 			By("Dumping pulled manifest")
-			session = ExecuteKubectlMft("dump", "-t", testTag)
+			session = ExecuteKubectlMft("dump", testTag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying content is correct")
@@ -143,7 +143,7 @@ var _ = Describe("Integration Tests", func() {
 		AfterEach(func() {
 			// Cleanup all tags
 			for _, tag := range tags {
-				session := ExecuteKubectlMft("delete", "-t", tag, "--force")
+				session := ExecuteKubectlMft("delete", tag, "--force")
 				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			}
 		})
@@ -151,7 +151,7 @@ var _ = Describe("Integration Tests", func() {
 		It("should manage multiple tags correctly", func() {
 			By("Packing three different tags")
 			for _, tag := range tags {
-				session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", tag)
+				session := ExecuteKubectlMft("pack", "-f", manifestPath, tag)
 				Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 				time.Sleep(100 * time.Millisecond)
 			}
@@ -172,7 +172,7 @@ var _ = Describe("Integration Tests", func() {
 			Expect(foundCount).To(Equal(3))
 
 			By("Deleting middle tag")
-			session = ExecuteKubectlMft("delete", "-t", tags[1], "--force")
+			session = ExecuteKubectlMft("delete", tags[1], "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying other tags still exist")
@@ -193,17 +193,17 @@ var _ = Describe("Integration Tests", func() {
 			Expect(foundTags["v3.0.0"]).To(BeTrue())
 
 			By("Verifying remaining tags can be dumped")
-			session = ExecuteKubectlMft("dump", "-t", tags[0])
+			session = ExecuteKubectlMft("dump", tags[0])
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
-			session = ExecuteKubectlMft("dump", "-t", tags[2])
+			session = ExecuteKubectlMft("dump", tags[2])
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
 		It("should share index.json for all tags", func() {
 			By("Packing multiple tags")
 			for _, tag := range tags {
-				session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", tag)
+				session := ExecuteKubectlMft("pack", "-f", manifestPath, tag)
 				Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 			}
 
@@ -242,18 +242,18 @@ var _ = Describe("Integration Tests", func() {
 
 		BeforeEach(func() {
 			testTag = CreateUniqueTag("path-dump")
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", testTag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 		})
 
 		AfterEach(func() {
-			session := ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session := ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
 		It("should access manifest via path command", func() {
 			By("Getting blob path")
-			session := ExecuteKubectlMft("path", "-t", testTag)
+			session := ExecuteKubectlMft("path", testTag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			blobPath := strings.TrimSpace(string(session.Out.Contents()))
 
@@ -262,7 +262,7 @@ var _ = Describe("Integration Tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Getting content via dump")
-			session = ExecuteKubectlMft("dump", "-t", testTag)
+			session = ExecuteKubectlMft("dump", testTag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			dumpContent := session.Out.Contents()
 
@@ -282,7 +282,7 @@ var _ = Describe("Integration Tests", func() {
 
 		AfterEach(func() {
 			for _, tag := range []string{repo1Tag, repo2Tag, repo3Tag} {
-				session := ExecuteKubectlMft("delete", "-t", tag, "--force")
+				session := ExecuteKubectlMft("delete", tag, "--force")
 				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			}
 		})
@@ -290,7 +290,7 @@ var _ = Describe("Integration Tests", func() {
 		It("should manage multiple repositories independently", func() {
 			By("Packing to different repositories")
 			for _, tag := range []string{repo1Tag, repo2Tag, repo3Tag} {
-				session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", tag)
+				session := ExecuteKubectlMft("pack", "-f", manifestPath, tag)
 				Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 			}
 
@@ -303,14 +303,14 @@ var _ = Describe("Integration Tests", func() {
 			Expect(len(listResult)).To(BeNumerically(">=", 3))
 
 			By("Deleting from one repository")
-			session = ExecuteKubectlMft("delete", "-t", repo2Tag, "--force")
+			session = ExecuteKubectlMft("delete", repo2Tag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying other repositories unaffected")
-			session = ExecuteKubectlMft("dump", "-t", repo1Tag)
+			session = ExecuteKubectlMft("dump", repo1Tag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
-			session = ExecuteKubectlMft("dump", "-t", repo3Tag)
+			session = ExecuteKubectlMft("dump", repo3Tag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 	})

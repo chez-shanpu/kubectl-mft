@@ -56,12 +56,12 @@ var _ = Describe("List Command", func() {
 
 		BeforeEach(func() {
 			testTag = CreateUniqueTag("list-single")
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", testTag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 		})
 
 		AfterEach(func() {
-			session := ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session := ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
@@ -121,7 +121,7 @@ var _ = Describe("List Command", func() {
 
 			// Pack three different tags to the same repository
 			for _, tag := range []string{tag1, tag2, tag3} {
-				session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", tag)
+				session := ExecuteKubectlMft("pack", "-f", manifestPath, tag)
 				Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 				time.Sleep(100 * time.Millisecond) // Small delay to ensure different timestamps
 			}
@@ -129,7 +129,7 @@ var _ = Describe("List Command", func() {
 
 		AfterEach(func() {
 			for _, tag := range []string{tag1, tag2, tag3} {
-				session := ExecuteKubectlMft("delete", "-t", tag, "--force")
+				session := ExecuteKubectlMft("delete", tag, "--force")
 				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			}
 		})
@@ -181,18 +181,18 @@ var _ = Describe("List Command", func() {
 			repo1Tag = "localhost:5000/repo-a:v1.0.0"
 			repo2Tag = "localhost:5000/repo-b:v1.0.0"
 
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", repo1Tag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, repo1Tag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
-			session = ExecuteKubectlMft("pack", "-f", manifestPath, "-t", repo2Tag)
+			session = ExecuteKubectlMft("pack", "-f", manifestPath, repo2Tag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 		})
 
 		AfterEach(func() {
-			session := ExecuteKubectlMft("delete", "-t", repo1Tag, "--force")
+			session := ExecuteKubectlMft("delete", repo1Tag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
-			session = ExecuteKubectlMft("delete", "-t", repo2Tag, "--force")
+			session = ExecuteKubectlMft("delete", repo2Tag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
@@ -260,12 +260,12 @@ var _ = Describe("List Command", func() {
 
 		BeforeEach(func() {
 			testTag = CreateUniqueTag("size-test")
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", testTag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 		})
 
 		AfterEach(func() {
-			session := ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session := ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
@@ -284,12 +284,12 @@ var _ = Describe("List Command", func() {
 
 		BeforeEach(func() {
 			testTag = CreateUniqueTag("timestamp-test")
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", testTag)
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, testTag)
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 		})
 
 		AfterEach(func() {
-			session := ExecuteKubectlMft("delete", "-t", testTag, "--force")
+			session := ExecuteKubectlMft("delete", testTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 

@@ -20,16 +20,11 @@ var pushOpts PushOpts
 
 func init() {
 	rootCmd.AddCommand(pushCmd)
-
-	flag := pushCmd.Flags()
-	flag.StringVarP(&pushOpts.tag, TagFlag, TagShortFlag, "", "OCI reference for the manifest to push (e.g., registry.example.com/repo:tag)")
-
-	_ = pushCmd.MarkFlagRequired(TagFlag)
 }
 
 // pushCmd represents the push command
 var pushCmd = &cobra.Command{
-	Use:   "push",
+	Use:   "push <tag>",
 	Short: "Push a packaged manifest to an OCI registry",
 	Long: `Push uploads a previously packaged Kubernetes manifest to an OCI-compliant registry.
 
@@ -39,14 +34,16 @@ into the target registry using 'docker login' before pushing.
 
 Examples:
   # Push manifest to Docker Hub
-  kubectl mft push -t docker.io/myuser/my-app:v1.0.0
-  
+  kubectl mft push docker.io/myuser/my-app:v1.0.0
+
   # Push to a private registry
-  kubectl mft push -t registry.company.com/team/app:latest
-  
+  kubectl mft push registry.company.com/team/app:latest
+
   # Push to localhost registry
-  kubectl mft push -t localhost:5000/test-app:dev`,
+  kubectl mft push localhost:5000/test-app:dev`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		pushOpts.tag = args[0]
 		return runPush(cmd.Context())
 	},
 }

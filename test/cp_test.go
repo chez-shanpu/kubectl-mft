@@ -25,13 +25,13 @@ var _ = Describe("Copy Command", func() {
 		sourceTag = CreateUniqueTag("cp-test-source")
 
 		By("Packing source manifest")
-		session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", sourceTag)
+		session := ExecuteKubectlMft("pack", "-f", manifestPath, sourceTag)
 		Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 	})
 
 	AfterEach(func() {
 		// Clean up source tag
-		session := ExecuteKubectlMft("delete", "-t", sourceTag, "--force")
+		session := ExecuteKubectlMft("delete", sourceTag, "--force")
 		Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 	})
 
@@ -47,12 +47,12 @@ var _ = Describe("Copy Command", func() {
 			Expect(session.Out.Contents()).To(BeEmpty())
 
 			By("Verifying source manifest still exists")
-			session = ExecuteKubectlMft("dump", "-t", sourceTag)
+			session = ExecuteKubectlMft("dump", sourceTag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			sourceContent := string(session.Out.Contents())
 
 			By("Verifying destination manifest exists")
-			session = ExecuteKubectlMft("dump", "-t", destTag)
+			session = ExecuteKubectlMft("dump", destTag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			destContent := string(session.Out.Contents())
 
@@ -61,7 +61,7 @@ var _ = Describe("Copy Command", func() {
 			Expect(destContent).To(Equal(testFixtures.GetSimpleManifest()))
 
 			By("Cleaning up destination tag")
-			session = ExecuteKubectlMft("delete", "-t", destTag, "--force")
+			session = ExecuteKubectlMft("delete", destTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
@@ -73,12 +73,12 @@ var _ = Describe("Copy Command", func() {
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying destination manifest exists and matches source")
-			session = ExecuteKubectlMft("dump", "-t", destTag)
+			session = ExecuteKubectlMft("dump", destTag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			Expect(string(session.Out.Contents())).To(Equal(testFixtures.GetSimpleManifest()))
 
 			By("Cleaning up destination tag")
-			session = ExecuteKubectlMft("delete", "-t", destTag, "--force")
+			session = ExecuteKubectlMft("delete", destTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
@@ -93,12 +93,12 @@ var _ = Describe("Copy Command", func() {
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Verifying destination manifest exists")
-			session = ExecuteKubectlMft("dump", "-t", destTag)
+			session = ExecuteKubectlMft("dump", destTag)
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 			Expect(string(session.Out.Contents())).To(Equal(testFixtures.GetSimpleManifest()))
 
 			By("Cleaning up destination tag")
-			session = ExecuteKubectlMft("delete", "-t", destTag, "--force")
+			session = ExecuteKubectlMft("delete", destTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 	})
@@ -118,7 +118,7 @@ var _ = Describe("Copy Command", func() {
 
 		It("should fail when destination tag already exists", func() {
 			By("Creating destination tag with same content")
-			session := ExecuteKubectlMft("pack", "-f", manifestPath, "-t", sourceTag+"-existing")
+			session := ExecuteKubectlMft("pack", "-f", manifestPath, sourceTag+"-existing")
 			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 			By("Attempting to copy to existing destination")
@@ -129,7 +129,7 @@ var _ = Describe("Copy Command", func() {
 			Expect(session.Err).To(gbytes.Say("destination tag .* already exists"))
 
 			By("Cleaning up existing tag")
-			session = ExecuteKubectlMft("delete", "-t", sourceTag+"-existing", "--force")
+			session = ExecuteKubectlMft("delete", sourceTag+"-existing", "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
@@ -150,7 +150,7 @@ var _ = Describe("Copy Command", func() {
 			Eventually(session).Should(gexec.Exit(0))
 
 			By("Cleaning up simple destination tag")
-			session = ExecuteKubectlMft("delete", "-t", "simple-dest:latest", "--force")
+			session = ExecuteKubectlMft("delete", "simple-dest:latest", "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
@@ -193,11 +193,11 @@ var _ = Describe("Copy Command", func() {
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 			By("Dumping both source and destination")
-			sourceSession := ExecuteKubectlMft("dump", "-t", sourceTag)
+			sourceSession := ExecuteKubectlMft("dump", sourceTag)
 			Eventually(sourceSession, 10*time.Second).Should(gexec.Exit(0))
 			sourceContent := string(sourceSession.Out.Contents())
 
-			destSession := ExecuteKubectlMft("dump", "-t", destTag)
+			destSession := ExecuteKubectlMft("dump", destTag)
 			Eventually(destSession, 10*time.Second).Should(gexec.Exit(0))
 			destContent := string(destSession.Out.Contents())
 
@@ -207,7 +207,7 @@ var _ = Describe("Copy Command", func() {
 			Expect(destContent).To(ContainSubstring("name: test-app"))
 
 			By("Cleaning up destination tag")
-			session = ExecuteKubectlMft("delete", "-t", destTag, "--force")
+			session = ExecuteKubectlMft("delete", destTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 	})
@@ -230,7 +230,7 @@ var _ = Describe("Copy Command", func() {
 			Expect(output).To(ContainSubstring("cp-test-list"))
 
 			By("Cleaning up destination tag")
-			session = ExecuteKubectlMft("delete", "-t", destTag, "--force")
+			session = ExecuteKubectlMft("delete", destTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 	})
@@ -250,7 +250,7 @@ var _ = Describe("Copy Command", func() {
 			Expect(session.Err.Contents()).To(BeEmpty())
 
 			By("Cleaning up destination tag")
-			session = ExecuteKubectlMft("delete", "-t", destTag, "--force")
+			session = ExecuteKubectlMft("delete", destTag, "--force")
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 	})
