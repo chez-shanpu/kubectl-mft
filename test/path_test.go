@@ -106,11 +106,11 @@ var _ = Describe("Path Command", func() {
 		})
 	})
 
-	Context("when tag format is invalid", func() {
-		It("should fail with appropriate error message", func() {
-			session := ExecuteKubectlMft("path", "-t", "invalid-tag-format")
+	Context("when simple tag does not exist", func() {
+		It("should fail with not found error", func() {
+			session := ExecuteKubectlMft("path", "-t", "nonexistent-simple-tag")
 			Eventually(session).Should(gexec.Exit(1))
-			Expect(session.Err).To(gbytes.Say("invalid reference"))
+			Expect(session.Err).To(gbytes.Say("not found"))
 		})
 	})
 

@@ -216,11 +216,11 @@ var _ = Describe("Delete Command", func() {
 		})
 	})
 
-	Context("when tag format is invalid", func() {
-		It("should fail with appropriate error message", func() {
-			session := ExecuteKubectlMft("delete", "-t", "invalid-tag-format", "--force")
-			Eventually(session).Should(gexec.Exit(1))
-			Expect(session.Err).To(gbytes.Say("invalid reference"))
+	Context("when simple tag does not exist", func() {
+		It("should show not found warning", func() {
+			session := ExecuteKubectlMft("delete", "-t", "nonexistent-simple-tag", "--force")
+			Eventually(session).Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say("not found"))
 		})
 	})
 

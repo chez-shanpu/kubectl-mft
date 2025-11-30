@@ -133,24 +133,25 @@ var _ = Describe("Copy Command", func() {
 			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
-		It("should fail with invalid source tag format", func() {
+		It("should fail with non-existent simple source tag", func() {
 			destTag := CreateUniqueTag("cp-test-dest")
 
-			By("Attempting to copy with invalid source tag")
-			session := ExecuteKubectlMft("cp", "invalid-format", destTag)
+			By("Attempting to copy with non-existent simple source tag")
+			session := ExecuteKubectlMft("cp", "nonexistent-source", destTag)
 			Eventually(session).Should(gexec.Exit(1))
 
 			By("Verifying error message")
-			Expect(session.Err).To(gbytes.Say("invalid reference|failed to parse reference"))
+			Expect(session.Err).To(gbytes.Say("not found"))
 		})
 
-		It("should fail with invalid destination tag format", func() {
-			By("Attempting to copy with invalid destination tag")
-			session := ExecuteKubectlMft("cp", sourceTag, "invalid-format")
-			Eventually(session).Should(gexec.Exit(1))
+		It("should succeed with simple destination tag format", func() {
+			By("Copying to simple destination tag")
+			session := ExecuteKubectlMft("cp", sourceTag, "simple-dest:latest")
+			Eventually(session).Should(gexec.Exit(0))
 
-			By("Verifying error message")
-			Expect(session.Err).To(gbytes.Say("invalid.*tag|failed to parse reference"))
+			By("Cleaning up simple destination tag")
+			session = ExecuteKubectlMft("delete", "-t", "simple-dest:latest", "--force")
+			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 		})
 
 		It("should fail when insufficient arguments are provided", func() {

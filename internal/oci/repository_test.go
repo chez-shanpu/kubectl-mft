@@ -28,9 +28,14 @@ func TestParseReference(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "invalid format",
-			tag:     "invalid-tag-format",
-			wantErr: true,
+			name:    "simple tag name without slash (normalized to local/)",
+			tag:     "myapp:v1.0.0",
+			wantErr: false,
+		},
+		{
+			name:    "simple tag name without version",
+			tag:     "myapp",
+			wantErr: false,
 		},
 	}
 
@@ -254,6 +259,49 @@ func TestRepositoryName(t *testing.T) {
 			result := repo.Name()
 			if result != tt.expected {
 				t.Errorf("Repository.Name() = %q, expected %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestNormalizeTag(t *testing.T) {
+	tests := []struct {
+		name     string
+		tag      string
+		expected string
+	}{
+		{
+			name:     "simple tag without slash",
+			tag:      "myapp:v1.0.0",
+			expected: "local/myapp:v1.0.0",
+		},
+		{
+			name:     "simple tag without version",
+			tag:      "myapp",
+			expected: "local/myapp",
+		},
+		{
+			name:     "tag with registry (not normalized)",
+			tag:      "docker.io/user/app:latest",
+			expected: "docker.io/user/app:latest",
+		},
+		{
+			name:     "localhost tag (not normalized)",
+			tag:      "localhost/test:v1",
+			expected: "localhost/test:v1",
+		},
+		{
+			name:     "tag with single slash",
+			tag:      "repo/app:v1",
+			expected: "repo/app:v1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := normalizeTag(tt.tag)
+			if result != tt.expected {
+				t.Errorf("normalizeTag(%q) = %q, expected %q", tt.tag, result, tt.expected)
 			}
 		})
 	}
