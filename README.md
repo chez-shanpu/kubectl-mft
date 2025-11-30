@@ -148,6 +148,24 @@ kubectl mft pull -t ghcr.io/myorg/manifests:v1.0.0
 kubectl mft dump -t ghcr.io/myorg/manifests:v1.0.0 | kubectl apply -f -
 ```
 
+### Simple Tag Names
+
+You can use simple tag names without a registry prefix. They are automatically stored under the `local/` namespace:
+
+```bash
+# These are equivalent:
+kubectl mft pack -f deployment.yaml -t myapp:v1.0.0
+kubectl mft pack -f deployment.yaml -t local/myapp:v1.0.0
+
+# List shows them without the "local/" prefix
+kubectl mft list
+# REPOSITORY   TAG      SIZE   CREATED
+# myapp        v1.0.0   694B   2025-01-15 10:30
+
+# Dump using simple tag
+kubectl mft dump -t myapp:v1.0.0 | kubectl apply -f -
+```
+
 ### Managing Local Manifests
 
 **List all locally stored manifests**

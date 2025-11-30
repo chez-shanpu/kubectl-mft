@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/opencontainers/go-digest"
@@ -109,6 +110,10 @@ func getRepoName(indexDir string) (string, error) {
 		return "", fmt.Errorf("failed to get relative path: %w", err)
 	}
 	repoName := filepath.ToSlash(relPath)
+
+	// Strip the default registry prefix for display
+	repoName = strings.TrimPrefix(repoName, DefaultRegistry+"/")
+
 	return repoName, nil
 }
 

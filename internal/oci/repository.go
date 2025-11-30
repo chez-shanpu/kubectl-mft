@@ -29,6 +29,9 @@ import (
 const (
 	artifactType     = "application/vnd.kubectl-mft.v1"
 	contentMediaType = "application/vnd.kubectl-mft.content.v1+yaml"
+
+	// DefaultRegistry is the default registry name used for simple tag names without a slash
+	DefaultRegistry = "local"
 )
 
 const (
@@ -395,13 +398,24 @@ func deleteRepositoryIfEmpty(indexDir string) error {
 	return nil
 }
 
-// parseReference parses and validates the OCI reference
+// parseReference parses and validates the OCI reference.
+// If the tag doesn't contain a slash, it prepends the default registry name.
 func parseReference(tag string) (*registry.Reference, error) {
-	ref, err := registry.ParseReference(tag)
+	normalizedTag := normalizeTag(tag)
+	ref, err := registry.ParseReference(normalizedTag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse reference %q: %w", tag, err)
 	}
 	return &ref, nil
+}
+
+// normalizeTag adds the default registry prefix if the tag doesn't contain a slash.
+// For example: "myapp:v1" becomes "local/myapp:v1"
+func normalizeTag(tag string) string {
+	if !strings.Contains(tag, "/") {
+		return DefaultRegistry + "/" + tag
+	}
+	return tag
 }
 
 // isLocalRegistry checks if the registry is a local/test registry that should use PlainHTTP
