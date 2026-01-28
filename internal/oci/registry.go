@@ -27,7 +27,7 @@ func NewRegistry() *Registry {
 
 func (r *Registry) List(ctx context.Context) (*mft.ListResult, error) {
 	if _, err := os.Stat(baseDir); os.IsNotExist(err) {
-		return nil, nil
+		return mft.NewListResult(nil), nil
 	}
 
 	var info []*mft.Info
