@@ -15,11 +15,19 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Get version from release workflow
         id: get_version
@@ -28,7 +36,7 @@ jobs:
           VERSION=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Update krew manifest
         run: ./scripts/update-krew-manifest.sh ${{ steps.get_version.outputs.VERSION }}
@@ -52,4 +60,4 @@ jobs:
               --head "$BRANCH_NAME"
           fi
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
