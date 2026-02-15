@@ -5,16 +5,19 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/spf13/cobra"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
 	"github.com/chez-shanpu/kubectl-mft/internal/oci"
+	"github.com/chez-shanpu/kubectl-mft/internal/validate"
 )
 
 type PackOpts struct {
-	filePath string
-	tag      string
+	filePath       string
+	tag            string
+	skipValidation bool
 }
 
 var packOpts PackOpts
@@ -24,6 +27,7 @@ func init() {
 
 	flag := packCmd.Flags()
 	flag.StringVarP(&packOpts.filePath, FileFlag, FileShortFlag, "", "Path to the manifest file to pack")
+	flag.BoolVar(&packOpts.skipValidation, "skip-validation", false, "Skip manifest validation before packing")
 
 	_ = packCmd.MarkFlagRequired(FileFlag)
 }
@@ -61,6 +65,18 @@ Examples:
 }
 
 func runPack(ctx context.Context) error {
+	if !packOpts.skipValidation {
+		tmpl, err := validate.SchemaLocationTemplate()
+		if err != nil {
+			return fmt.Errorf("failed to resolve schema directory: %w", err)
+		}
+		if err := validate.ValidateManifest(packOpts.filePath,
+			validate.WithSchemaLocations(tmpl),
+		); err != nil {
+			return fmt.Errorf("manifest validation failed: %w", err)
+		}
+	}
+
 	r, err := oci.NewRepository(packOpts.tag)
 	if err != nil {
 		return err
