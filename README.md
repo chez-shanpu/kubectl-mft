@@ -39,6 +39,7 @@ Under the hood, it uses OCI registries—the same technology that stores your co
 - **Simple workflow** - Pack, push, pull, and apply—just like Docker
 - **Version control** - Tag and version your manifests like container images
 - **Any OCI registry** - Works with Docker Hub, GitHub Container Registry, Google Artifact Registry, etc.
+- **Manifest validation** - Validate Kubernetes manifests against schemas before packing, with CRD support
 - **Local caching** - Efficiently manage locally stored manifests
 
 ## Quick Start
@@ -191,6 +192,12 @@ kubectl mft path localhost:5000/myapp:v1.0.0
 kubectl debug mypod -it --image busyboz --custom=$(kubectl mft path localhost:5000/debug-container)
 ```
 
+> **Note:** When packing YAML files that do not contain `apiVersion`/`kind` fields (e.g., debug container custom profiles), a warning like the following will be printed to stderr, but the pack operation completes successfully and the file is stored correctly.
+> ```
+> warning: debug-profile.yaml: error while parsing: missing 'kind' key
+> ```
+> To suppress this warning, use the `--skip-validation` flag: `kubectl mft pack --skip-validation ...`
+
 **Delete a manifest**
 
 ```bash
@@ -217,11 +224,47 @@ kubectl mft cp ghcr.io/myorg/manifests:v1.0.0 ghcr.io/myorg/manifests:latest
 kubectl mft cp ghcr.io/myorg/manifests:v1.0.0 ghcr.io/myorg/prod-manifests:v1.0.0
 ```
 
+### Manifest Validation
+
+kubectl-mft validates your Kubernetes manifests when packing to catch errors early.
+
+**Basic validation (automatic)**
+
+```bash
+# Validation runs automatically during pack
+kubectl mft pack -f deployment.yaml myapp:v1.0.0
+
+# Skip validation if needed
+kubectl mft pack -f deployment.yaml myapp:v1.0.0 --skip-validation
+```
+
+**Register CRD schemas for custom resource validation**
+
+```bash
+# Register a CRD schema
+kubectl mft schema add -f myresource-crd.yaml
+
+# List registered schemas
+kubectl mft schema list
+
+# Delete a registered schema
+kubectl mft schema delete example.com/MyResource
+```
+
+**Multi-document YAML support**
+
+Manifests with multiple resources separated by `---` are validated individually:
+
+```bash
+# Each resource in the file is validated separately
+kubectl mft pack -f multi-resource.yaml myapp:v1.0.0
+```
+
 ## Command Reference
 
 | Command | Description |
 |---------|-------------|
-| `pack` | Package a Kubernetes manifest into OCI layout format |
+| `pack` | Package and validate a Kubernetes manifest into OCI layout format |
 | `push` | Push a manifest to an OCI registry |
 | `pull` | Pull a manifest from an OCI registry |
 | `dump` | Output a manifest from local storage |
@@ -229,6 +272,9 @@ kubectl mft cp ghcr.io/myorg/manifests:v1.0.0 ghcr.io/myorg/prod-manifests:v1.0.
 | `path` | Get the file path to a manifest blob |
 | `delete` | Delete a manifest from local storage |
 | `cp` | Copy a manifest to a new tag in local storage |
+| `schema add` | Register a CRD schema for custom resource validation |
+| `schema list` | List registered CRD schemas |
+| `schema delete` | Delete a registered CRD schema |
 
 For detailed usage of each command, run `kubectl mft <command> --help`.
 
