@@ -22,6 +22,7 @@ var (
 	testRegistry   *Registry
 	testFixtures   *Fixtures
 	testStorageDir string
+	testSchemaDir  string
 )
 
 func TestE2E(t *testing.T) {
@@ -43,6 +44,10 @@ var _ = BeforeSuite(func() {
 	By("Starting test registry")
 	testRegistry = NewRegistry()
 	testRegistry.Start()
+
+	By("Creating test schema directory")
+	testSchemaDir, err = os.MkdirTemp("", "kubectl-mft-test-schema-*")
+	Expect(err).NotTo(HaveOccurred())
 
 	By("Setting up test fixtures")
 	testFixtures = NewFixtures()
@@ -70,12 +75,20 @@ var _ = AfterSuite(func() {
 	if testStorageDir != "" {
 		os.RemoveAll(testStorageDir)
 	}
+
+	By("Cleaning up test schema directory")
+	if testSchemaDir != "" {
+		os.RemoveAll(testSchemaDir)
+	}
 })
 
 // Helper function to execute kubectl-mft command
 func ExecuteKubectlMft(args ...string) *gexec.Session {
 	cmd := exec.Command(kubectlMftPath, args...)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("KUBECTL_MFT_STORAGE_DIR=%s", testStorageDir))
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("KUBECTL_MFT_STORAGE_DIR=%s", testStorageDir),
+		fmt.Sprintf("KUBECTL_MFT_SCHEMA_DIR=%s", testSchemaDir),
+	)
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	return session
