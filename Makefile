@@ -21,12 +21,12 @@ fmt:
 mod:
 	$(GO) mod tidy
 
-.PHONY: modernize
-modernize:
-	$(GO) run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -fix -test ./...
+.PHONY: fix
+fix:
+	$(GO) fix ./...
 
 .PHONY: check-diff
-check-diff: mod fmt modernize
+check-diff: mod fmt fix
 	git diff --exit-code --name-only
 
 .PHONY: vet
