@@ -1,9 +1,14 @@
 package oci
 
 import (
+	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"oras.land/oras-go/v2/errdef"
 )
 
 func TestParseReference(t *testing.T) {
@@ -304,6 +309,92 @@ func TestNormalizeTag(t *testing.T) {
 				t.Errorf("normalizeTag(%q) = %q, expected %q", tt.tag, result, tt.expected)
 			}
 		})
+	}
+}
+
+func TestCopyDifferentTag(t *testing.T) {
+	// Override baseDir to use a temp directory
+	origBaseDir := baseDir
+	baseDir = t.TempDir()
+	t.Cleanup(func() { baseDir = origBaseDir })
+
+	ctx := context.Background()
+
+	// Create a test manifest file
+	manifestFile := filepath.Join(t.TempDir(), "test.yaml")
+	if err := os.WriteFile(manifestFile, []byte("apiVersion: v1\nkind: ConfigMap\n"), 0o644); err != nil {
+		t.Fatalf("failed to create test manifest: %v", err)
+	}
+
+	// Save a manifest with source tag
+	srcRepo, err := NewRepository("myrepo:src")
+	if err != nil {
+		t.Fatalf("NewRepository(src) failed: %v", err)
+	}
+	if err := srcRepo.Save(ctx, manifestFile); err != nil {
+		t.Fatalf("Save() failed: %v", err)
+	}
+
+	// Copy to a different tag in a different repository
+	if err := srcRepo.Copy(ctx, "otherrepo:dest"); err != nil {
+		t.Fatalf("Copy() failed: %v", err)
+	}
+
+	// Verify dest tag is resolvable in the dest repository
+	destRepo, err := NewRepository("otherrepo:dest")
+	if err != nil {
+		t.Fatalf("NewRepository(dest) failed: %v", err)
+	}
+	destStore, err := destRepo.newOCILayoutStore()
+	if err != nil {
+		t.Fatalf("newOCILayoutStore(dest) failed: %v", err)
+	}
+	if _, err := destStore.Resolve(ctx, "dest"); err != nil {
+		t.Errorf("dest tag should be resolvable, got error: %v", err)
+	}
+
+	// Verify source tag does NOT exist in the dest repository
+	if _, err := destStore.Resolve(ctx, "src"); !errors.Is(err, errdef.ErrNotFound) {
+		t.Errorf("source tag should not exist in dest repo, got: %v", err)
+	}
+}
+
+func TestCopyDuplicateTagError(t *testing.T) {
+	origBaseDir := baseDir
+	baseDir = t.TempDir()
+	t.Cleanup(func() { baseDir = origBaseDir })
+
+	ctx := context.Background()
+
+	manifestFile := filepath.Join(t.TempDir(), "test.yaml")
+	if err := os.WriteFile(manifestFile, []byte("test: data\n"), 0o644); err != nil {
+		t.Fatalf("failed to create test manifest: %v", err)
+	}
+
+	srcRepo, err := NewRepository("myrepo:v1")
+	if err != nil {
+		t.Fatalf("NewRepository(src) failed: %v", err)
+	}
+	if err := srcRepo.Save(ctx, manifestFile); err != nil {
+		t.Fatalf("Save() failed: %v", err)
+	}
+
+	// Save the same manifest to dest tag so the copy will fail with "already exists"
+	destRepo, err := NewRepository("myrepo:v2")
+	if err != nil {
+		t.Fatalf("NewRepository(dest) failed: %v", err)
+	}
+	if err := destRepo.Save(ctx, manifestFile); err != nil {
+		t.Fatalf("Save(dest) failed: %v", err)
+	}
+
+	// Copy should fail because dest tag already exists
+	err = srcRepo.Copy(ctx, "myrepo:v2")
+	if err == nil {
+		t.Fatal("Copy() should have failed when dest tag already exists")
+	}
+	if !strings.Contains(err.Error(), "already exists") {
+		t.Errorf("expected 'already exists' error, got: %v", err)
 	}
 }
 

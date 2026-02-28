@@ -5,21 +5,28 @@ package cmd
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/spf13/cobra"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
 	"github.com/chez-shanpu/kubectl-mft/internal/oci"
+	"github.com/chez-shanpu/kubectl-mft/internal/signature"
 )
 
 type PullOpts struct {
-	tag string
+	tag        string
+	skipVerify bool
 }
 
 var pullOpts PullOpts
 
 func init() {
 	rootCmd.AddCommand(pullCmd)
+
+	flag := pullCmd.Flags()
+	flag.BoolVar(&pullOpts.skipVerify, "skip-verify", false, "Skip signature verification after pulling")
 }
 
 // pullCmd represents the pull command
@@ -54,5 +61,44 @@ func runPull(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return mft.Pull(ctx, r)
+
+	// Check if manifest already exists locally before pull
+	existedBefore, err := r.Exists(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to check local manifest: %w", err)
+	}
+
+	if err := mft.Pull(ctx, r); err != nil {
+		return err
+	}
+
+	if !pullOpts.skipVerify {
+		if !signature.PublicKeysExist() {
+			return handleVerifyFailure(ctx, r, existedBefore, fmt.Errorf("no verification keys found, run 'kubectl mft key import <file>' to import a public key, or use '--skip-verify' to skip verification"))
+		}
+		verifier, err := signature.NewVerifierFromKeyDir()
+		if err != nil {
+			return handleVerifyFailure(ctx, r, existedBefore, err)
+		}
+		if err := verifier.Verify(ctx, r.LayoutPath(), r.Tag()); err != nil {
+			return handleVerifyFailure(ctx, r, existedBefore, fmt.Errorf("signature verification failed: %w", err))
+		}
+	}
+
+	return nil
+}
+
+func handleVerifyFailure(ctx context.Context, r *oci.Repository, existedBefore bool, originalErr error) error {
+	if existedBefore {
+		// Manifest existed before pull; don't attempt further deletion
+		return originalErr
+	}
+	return deletePulledData(ctx, r, originalErr)
+}
+
+func deletePulledData(ctx context.Context, r *oci.Repository, originalErr error) error {
+	if _, deleteErr := mft.Delete(ctx, r); deleteErr != nil {
+		return errors.Join(originalErr, fmt.Errorf("failed to clean up pulled data: %w", deleteErr))
+	}
+	return originalErr
 }

@@ -8,6 +8,9 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
+	"github.com/chez-shanpu/kubectl-mft/internal/oci"
+	"github.com/chez-shanpu/kubectl-mft/internal/signature"
 )
 
 var (
@@ -33,6 +36,18 @@ var rootCmd = &cobra.Command{
 	Short:        "A kubectl plugin for managing Kubernetes manifests",
 	SilenceUsage: true,
 	Version:      version,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Name() == "help" || cmd.Name() == "completion" {
+			return nil
+		}
+		if err := signature.InitKeyDir(); err != nil {
+			return err
+		}
+		if err := oci.InitBaseDir(); err != nil {
+			return err
+		}
+		return nil
+	},
 }
 
 func init() {

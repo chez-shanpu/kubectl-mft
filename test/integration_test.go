@@ -222,7 +222,8 @@ var _ = Describe("Integration Tests", func() {
 			}
 			err = json.Unmarshal(indexContent, &index)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(index.Manifests).To(HaveLen(3))
+			// Each pack creates a manifest + a signature artifact = 6 entries for 3 packs
+			Expect(len(index.Manifests)).To(BeNumerically(">=", 6))
 
 			foundTags := make(map[string]bool)
 			for _, m := range index.Manifests {
