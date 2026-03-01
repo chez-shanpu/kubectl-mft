@@ -40,19 +40,21 @@ const (
 
 var baseDir string
 
-func init() {
-	// Check for environment variable first (useful for testing)
+// InitBaseDir initializes the base storage directory path.
+// It checks the KUBECTL_MFT_STORAGE_DIR environment variable first,
+// then falls back to the default location under the user's home directory.
+func InitBaseDir() error {
 	if dir := os.Getenv("KUBECTL_MFT_STORAGE_DIR"); dir != "" {
 		baseDir = dir
-		return
+		return nil
 	}
 
 	home, err := os.UserHomeDir()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "failed to get user home directory: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
 	baseDir = filepath.Join(home, ".local", "share", "kubectl-mft", "manifests")
+	return nil
 }
 
 type Repository struct {
@@ -102,12 +104,7 @@ func (r *Repository) Copy(ctx context.Context, dest string) error {
 		return fmt.Errorf("failed to check destination tag: %w", err)
 	}
 
-	_, err = oras.Copy(ctx, sstore, r.ref.ReferenceOrDefault(), destStore, drepo.ref.ReferenceOrDefault(), oras.DefaultCopyOptions)
-	if err != nil {
-		return fmt.Errorf("failed to copy manifest: %w", err)
-	}
-
-	return nil
+	return r.extendedCopy(ctx, sstore, r.ref.ReferenceOrDefault(), destStore, drepo.ref.ReferenceOrDefault())
 }
 
 func (r *Repository) Delete(ctx context.Context) (*mft.DeleteResult, error) {
@@ -214,7 +211,7 @@ func (r *Repository) Pull(ctx context.Context) error {
 		return err
 	}
 
-	return r.copy(ctx, repo, layoutStore)
+	return r.extendedCopy(ctx, repo, r.ref.ReferenceOrDefault(), layoutStore, r.ref.ReferenceOrDefault())
 }
 
 func (r *Repository) Push(ctx context.Context) error {
@@ -228,7 +225,7 @@ func (r *Repository) Push(ctx context.Context) error {
 		return err
 	}
 
-	return r.copy(ctx, layoutStore, repo)
+	return r.extendedCopy(ctx, layoutStore, r.ref.ReferenceOrDefault(), repo, r.ref.ReferenceOrDefault())
 }
 
 func (r *Repository) Save(ctx context.Context, manifestPath string) (err error) {
@@ -247,7 +244,7 @@ func (r *Repository) Save(ctx context.Context, manifestPath string) (err error) 
 		return err
 	}
 
-	return r.copy(ctx, fs, layoutStore)
+	return r.copy(ctx, fs, r.ref.ReferenceOrDefault(), layoutStore, r.ref.ReferenceOrDefault())
 }
 
 func (r *Repository) Name() string {
@@ -261,9 +258,44 @@ func (r *Repository) Name() string {
 	return ""
 }
 
-// copyRepo handles copying manifests between OCI targets
-func (r *Repository) copy(ctx context.Context, source oras.Target, dest oras.Target) error {
-	_, err := oras.Copy(ctx, source, r.ref.ReferenceOrDefault(), dest, r.ref.ReferenceOrDefault(), oras.DefaultCopyOptions)
+// LayoutPath returns the local OCI layout directory path for this repository.
+func (r *Repository) LayoutPath() string {
+	return filepath.Join(baseDir, r.Name())
+}
+
+// Tag returns the tag or digest reference string used in the OCI layout.
+func (r *Repository) Tag() string {
+	return r.ref.ReferenceOrDefault()
+}
+
+// Exists checks if the manifest exists in local OCI layout storage.
+func (r *Repository) Exists(ctx context.Context) (bool, error) {
+	layoutStore, err := r.newOCILayoutStore()
+	if err != nil {
+		return false, err
+	}
+	_, err = layoutStore.Resolve(ctx, r.ref.ReferenceOrDefault())
+	if err != nil {
+		if errors.Is(err, errdef.ErrNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// copy copies a single manifest between OCI targets.
+func (r *Repository) copy(ctx context.Context, source oras.ReadOnlyTarget, srcRef string, dest oras.Target, destRef string) error {
+	_, err := oras.Copy(ctx, source, srcRef, dest, destRef, oras.DefaultCopyOptions)
+	if err != nil {
+		return r.formatCopyError(err)
+	}
+	return nil
+}
+
+// extendedCopy copies a manifest along with its referrers (e.g., signatures) between OCI targets.
+func (r *Repository) extendedCopy(ctx context.Context, source oras.ReadOnlyGraphTarget, srcRef string, dest oras.Target, destRef string) error {
+	_, err := oras.ExtendedCopy(ctx, source, srcRef, dest, destRef, oras.ExtendedCopyOptions{})
 	if err != nil {
 		return r.formatCopyError(err)
 	}

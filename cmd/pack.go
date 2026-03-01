@@ -5,12 +5,14 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
 
 	"github.com/chez-shanpu/kubectl-mft/internal/mft"
 	"github.com/chez-shanpu/kubectl-mft/internal/oci"
+	"github.com/chez-shanpu/kubectl-mft/internal/signature"
 	"github.com/chez-shanpu/kubectl-mft/internal/validate"
 )
 
@@ -18,6 +20,8 @@ type PackOpts struct {
 	filePath       string
 	tag            string
 	skipValidation bool
+	skipSign       bool
+	key            string
 }
 
 var packOpts PackOpts
@@ -28,6 +32,8 @@ func init() {
 	flag := packCmd.Flags()
 	flag.StringVarP(&packOpts.filePath, FileFlag, FileShortFlag, "", "Path to the manifest file to pack")
 	flag.BoolVar(&packOpts.skipValidation, "skip-validation", false, "Skip manifest validation before packing")
+	flag.BoolVar(&packOpts.skipSign, "skip-sign", false, "Skip signing the packed manifest")
+	flag.StringVar(&packOpts.key, "key", "default", "Name of the private key to use for signing")
 
 	_ = packCmd.MarkFlagRequired(FileFlag)
 }
@@ -77,9 +83,37 @@ func runPack(ctx context.Context) error {
 		}
 	}
 
+	// Check signing key before saving to avoid partial state
+	if !packOpts.skipSign {
+		if !signature.PrivateKeyExists(packOpts.key) {
+			return fmt.Errorf("signing key %q not found, run 'kubectl mft key generate' to create a key pair, or use '--skip-sign' to skip signing", packOpts.key)
+		}
+	}
+
 	r, err := oci.NewRepository(packOpts.tag)
 	if err != nil {
 		return err
 	}
-	return mft.Save(ctx, r, packOpts.filePath)
+	if err := mft.Save(ctx, r, packOpts.filePath); err != nil {
+		return err
+	}
+
+	if !packOpts.skipSign {
+		signer, err := signature.NewSignerFromKeyDir(packOpts.key)
+		if err != nil {
+			return deletePackedData(ctx, r, err)
+		}
+		if _, err := signer.Sign(ctx, r.LayoutPath(), r.Tag()); err != nil {
+			return deletePackedData(ctx, r, fmt.Errorf("failed to sign manifest: %w", err))
+		}
+	}
+
+	return nil
+}
+
+func deletePackedData(ctx context.Context, r *oci.Repository, originalErr error) error {
+	if _, deleteErr := mft.Delete(ctx, r); deleteErr != nil {
+		return errors.Join(originalErr, fmt.Errorf("failed to clean up packed data: %w", deleteErr))
+	}
+	return originalErr
 }

@@ -7,7 +7,7 @@
 **The simplest way to manage Kubernetes manifests**
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://go.dev/)
 
 kubectl-mft is a kubectl plugin that makes manifest management as simple as managing container images. No complex templating, no overlay structures—just save, version, and retrieve your manifests.
 
@@ -40,6 +40,7 @@ Under the hood, it uses OCI registries—the same technology that stores your co
 - **Version control** - Tag and version your manifests like container images
 - **Any OCI registry** - Works with Docker Hub, GitHub Container Registry, Google Artifact Registry, etc.
 - **Manifest validation** - Validate Kubernetes manifests against schemas before packing, with CRD support
+- **Manifest signing** - Sign and verify manifests with ECDSA P-256 keys
 - **Local caching** - Efficiently manage locally stored manifests
 
 ## Quick Start
@@ -167,6 +168,51 @@ kubectl mft list
 kubectl mft dump myapp:v1.0.0 | kubectl apply -f -
 ```
 
+### Signing and Verification
+
+kubectl-mft supports signing manifests with ECDSA P-256 keys. Signing happens automatically during `pack`, and verification during `pull`.
+
+**Initial setup (one-time)**
+
+```bash
+# Generate a signing key pair
+kubectl mft key generate
+
+# Share your public key with verifiers
+kubectl mft key export > my-public-key.pub
+```
+
+**Signer workflow**
+
+```bash
+# Pack automatically signs the manifest
+kubectl mft pack -f deployment.yaml myregistry/app:v1.0.0
+kubectl mft push myregistry/app:v1.0.0
+
+# Skip signing if no key is available
+kubectl mft pack -f deployment.yaml --skip-sign myregistry/app:v1.0.0
+```
+
+**Verifier workflow**
+
+```bash
+# Import a public key for verification
+kubectl mft key import signer-public-key.pub --name alice
+
+# Pull automatically verifies the signature
+kubectl mft pull myregistry/app:v1.0.0
+
+# Skip verification if no key is available
+kubectl mft pull --skip-verify myregistry/app:v1.0.0
+```
+
+**Standalone sign and verify**
+
+```bash
+kubectl mft sign myregistry/app:v1.0.0
+kubectl mft verify myregistry/app:v1.0.0
+```
+
 ### Managing Local Manifests
 
 **List all locally stored manifests**
@@ -272,6 +318,13 @@ kubectl mft pack -f multi-resource.yaml myapp:v1.0.0
 | `path` | Get the file path to a manifest blob |
 | `delete` | Delete a manifest from local storage |
 | `cp` | Copy a manifest to a new tag in local storage |
+| `sign` | Sign a packed manifest |
+| `verify` | Verify the signature of a manifest |
+| `key generate` | Generate an ECDSA P-256 key pair for signing |
+| `key import` | Import a public key for signature verification |
+| `key export` | Export a public key to stdout |
+| `key list` | List all signing keys |
+| `key delete` | Delete a public key |
 | `schema add` | Register a CRD schema for custom resource validation |
 | `schema list` | List registered CRD schemas |
 | `schema delete` | Delete a registered CRD schema |

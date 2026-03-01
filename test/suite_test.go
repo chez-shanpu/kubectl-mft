@@ -23,6 +23,7 @@ var (
 	testFixtures   *Fixtures
 	testStorageDir string
 	testSchemaDir  string
+	testKeyDir     string
 )
 
 func TestE2E(t *testing.T) {
@@ -48,6 +49,14 @@ var _ = BeforeSuite(func() {
 	By("Creating test schema directory")
 	testSchemaDir, err = os.MkdirTemp("", "kubectl-mft-test-schema-*")
 	Expect(err).NotTo(HaveOccurred())
+
+	By("Creating test key directory")
+	testKeyDir, err = os.MkdirTemp("", "kubectl-mft-test-keys-*")
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Generating test signing key")
+	session := ExecuteKubectlMft("key", "generate")
+	Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 	By("Setting up test fixtures")
 	testFixtures = NewFixtures()
@@ -80,6 +89,11 @@ var _ = AfterSuite(func() {
 	if testSchemaDir != "" {
 		os.RemoveAll(testSchemaDir)
 	}
+
+	By("Cleaning up test key directory")
+	if testKeyDir != "" {
+		os.RemoveAll(testKeyDir)
+	}
 })
 
 // Helper function to execute kubectl-mft command
@@ -88,6 +102,20 @@ func ExecuteKubectlMft(args ...string) *gexec.Session {
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("KUBECTL_MFT_STORAGE_DIR=%s", testStorageDir),
 		fmt.Sprintf("KUBECTL_MFT_SCHEMA_DIR=%s", testSchemaDir),
+		fmt.Sprintf("KUBECTL_MFT_KEY_DIR=%s", testKeyDir),
+	)
+	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	Expect(err).NotTo(HaveOccurred())
+	return session
+}
+
+// ExecuteKubectlMftWithKeyDir executes kubectl-mft with a custom key directory.
+func ExecuteKubectlMftWithKeyDir(keyDir string, args ...string) *gexec.Session {
+	cmd := exec.Command(kubectlMftPath, args...)
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("KUBECTL_MFT_STORAGE_DIR=%s", testStorageDir),
+		fmt.Sprintf("KUBECTL_MFT_SCHEMA_DIR=%s", testSchemaDir),
+		fmt.Sprintf("KUBECTL_MFT_KEY_DIR=%s", keyDir),
 	)
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
