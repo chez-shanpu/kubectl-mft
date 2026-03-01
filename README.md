@@ -28,8 +28,7 @@ kubectl-mft is a kubectl plugin that makes manifest management as simple as mana
 ```bash
 kubectl mft pack -f deployment.yaml myregistry/app:v1.0.0
 kubectl mft push myregistry/app:v1.0.0
-kubectl mft pull myregistry/app:v1.0.0
-kubectl mft dump myregistry/app:v1.0.0 | kubectl apply -f -
+kubectl mft apply myregistry/app:v1.0.0
 ```
 
 Under the hood, it uses OCI registries—the same technology that stores your container images.
@@ -55,8 +54,8 @@ kubectl mft push localhost:5000/myapp/config:v1.0.0
 # Pull from OCI registry
 kubectl mft pull localhost:5000/myapp/config:v1.0.0
 
-# Dump and apply to cluster
-kubectl mft dump localhost:5000/myapp/config:v1.0.0 | kubectl apply -f -
+# Apply to cluster (auto-pulls if not local)
+kubectl mft apply localhost:5000/myapp/config:v1.0.0
 ```
 
 ## Installation
@@ -147,7 +146,8 @@ kubectl mft pull ghcr.io/myorg/manifests:v1.0.0
 4. **Apply to cluster**
 
 ```bash
-kubectl mft dump ghcr.io/myorg/manifests:v1.0.0 | kubectl apply -f -
+# Auto-pulls from the registry if not already stored locally
+kubectl mft apply ghcr.io/myorg/manifests:v1.0.0
 ```
 
 ### Simple Tag Names
@@ -164,8 +164,8 @@ kubectl mft list
 # REPOSITORY   TAG      SIZE   CREATED
 # myapp        v1.0.0   694B   2025-01-15 10:30
 
-# Dump using simple tag
-kubectl mft dump myapp:v1.0.0 | kubectl apply -f -
+# Apply using simple tag
+kubectl mft apply myapp:v1.0.0
 ```
 
 ### Signing and Verification
@@ -204,6 +204,9 @@ kubectl mft pull myregistry/app:v1.0.0
 
 # Skip verification if no key is available
 kubectl mft pull --skip-verify myregistry/app:v1.0.0
+
+# Apply without signature verification
+kubectl mft apply --skip-verify myregistry/app:v1.0.0
 ```
 
 **Standalone sign and verify**
@@ -313,6 +316,7 @@ kubectl mft pack -f multi-resource.yaml myapp:v1.0.0
 | `pack` | Package and validate a Kubernetes manifest into OCI layout format |
 | `push` | Push a manifest to an OCI registry |
 | `pull` | Pull a manifest from an OCI registry |
+| `apply` | Apply a manifest to the current Kubernetes cluster (auto-pulls if not local) |
 | `dump` | Output a manifest from local storage |
 | `list` | List all locally stored manifests |
 | `path` | Get the file path to a manifest blob |
